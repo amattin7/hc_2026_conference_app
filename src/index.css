@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+ * Placeholder brand palette — PRD Section 2.2 marks exact hex values TBD
+ * pending organizer sign-off. Colonial red/navy/parchment holding pattern,
+ * chosen to read as "American historical" without clashing with the real
+ * logo once it lands. Swap these and every screen re-themes automatically.
+ */
+@theme {
+  --color-primary: #a3231f;
+  --color-primary-dark: #7a1a17;
+  --color-primary-light: #c2413d;
+  --color-ink: #1c1a17;
+  --color-parchment: #faf6ef;
+  --color-surface: #ffffff;
+  --color-border: #e6ddd0;
+
+  --font-sans: "Georgia", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--color-ink);
+    background: var(--color-parchment);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-sans);
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Audience skews older: keep every tap target comfortably large. */
+  button,
+  a.tap-target,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+}
