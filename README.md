@@ -17,17 +17,15 @@ npm run dev
 
 ## Database schema
 
-The full schema and Row Level Security policies live in `supabase/migrations/`. To apply them
-to your Supabase project:
+The full schema and Row Level Security policies live in `supabase/migrations/`, applied via
+`npx supabase db push`. See [`docs/operations.md`](./docs/operations.md) for CLI setup and
+common tasks (linking a project, granting admin access, test data cleanup).
 
-- **Dashboard SQL Editor** — paste the contents of each migration file (in order) and run, or
-- **Supabase CLI** — `npx supabase link --project-ref <your-project-ref>` then
-  `npx supabase db push`
+## Documentation
 
-Both migrations have been syntax- and behavior-tested against a real Postgres instance
-(schema creation, RLS policies for attendee vs. admin roles, and the feedback
-early-submission trigger all verified), but have not been applied to a live Supabase project —
-apply them yourself and confirm before going live.
+- [`PRD.md`](./PRD.md) — full product spec
+- [`docs/admin-guide.md`](./docs/admin-guide.md) — using the `/admin` panel (CSV import, attendee management)
+- [`docs/operations.md`](./docs/operations.md) — Supabase/CLI reference for developers
 
 ## Scripts
 

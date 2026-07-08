@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ScheduleProvider } from './context/ScheduleContext'
 import { FavoritesProvider } from './context/FavoritesContext'
@@ -9,7 +9,10 @@ import Home from './components/Home'
 import Schedule from './components/Schedule'
 import SessionDetail from './components/SessionDetail'
 import MySchedule from './components/MySchedule'
-import AdminHome from './components/AdminHome'
+import AdminLayout from './components/admin/AdminLayout'
+import AdminAttendees from './components/admin/AdminAttendees'
+import AdminSchedule from './components/admin/AdminSchedule'
+import AdminDashboard from './components/admin/AdminDashboard'
 
 function AttendeeArea() {
   return (
@@ -32,10 +35,15 @@ export default function App() {
             path="/admin"
             element={
               <ProtectedRoute requireRole="admin">
-                <AdminHome />
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="attendees" replace />} />
+            <Route path="attendees" element={<AdminAttendees />} />
+            <Route path="schedule" element={<AdminSchedule />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+          </Route>
 
           <Route
             element={

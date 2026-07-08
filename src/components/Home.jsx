@@ -44,6 +44,16 @@ export default function Home() {
 
       <AlertBanner sessions={alertSessions} />
 
+      {attendee?.friend_of_history_camp && (
+        <div className="px-4">
+          <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-center">
+            <p className="text-base font-medium text-primary-dark">
+              Thank you for being a Friend of History Camp! 🎉
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="px-4">
         {upNext ? (
           <div className="rounded-lg border border-border bg-surface p-4">
