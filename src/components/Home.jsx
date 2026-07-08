@@ -4,6 +4,7 @@ import { useSchedule } from '../context/ScheduleContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { formatTime, greetingForNow } from '../lib/format'
 import AlertBanner from './AlertBanner'
+import InstallBanner from './InstallBanner'
 import LoadingScreen from './LoadingScreen'
 
 function findUpNext(timeBlocks, now) {
@@ -43,6 +44,8 @@ export default function Home() {
       </div>
 
       <AlertBanner sessions={alertSessions} />
+
+      <InstallBanner />
 
       {attendee?.friend_of_history_camp && (
         <div className="px-4">
