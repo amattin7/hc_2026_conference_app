@@ -54,13 +54,13 @@ There's no UI for this (by design — see `supabase/migrations/20260706120100_rl
 for why role lives in `app_metadata`, not `user_metadata`). To promote a user to admin:
 
 1. Have them enter their email on the login screen once, so their `auth.users` row exists
-   (**don't** click the magic link yet — until the role is set, they'd be routed through the
-   attendee-linking flow and rejected for having no matching registration).
+   (**don't** enter the code they receive yet — until the role is set, they'd be routed through
+   the attendee-linking flow and rejected for having no matching registration).
 2. Run:
    ```bash
    npx supabase db query "update auth.users set raw_app_meta_data = raw_app_meta_data || '{\"role\":\"admin\"}'::jsonb where email = '<email>' returning email, raw_app_meta_data;" --linked
    ```
-3. They click the magic link and land on `/admin`.
+3. They enter the code and land on `/admin`.
 
 ## Running one-off SQL
 
@@ -104,6 +104,56 @@ wearing," not a second identity system. `auth_attendee_id()` returns a `setof uu
 a scalar for the same reason; the `attendee_sessions`/`session_feedback` owner RLS policies use
 `attendee_id in (select auth_attendee_id())` accordingly.
 
+## Sign-in: OTP codes, not magic links
+
+Auth Update PRD (2026-07-08). `Login.jsx` is a two-step email → 6-digit code screen:
+`signInWithOtp` requests the code, a new `verifyCode()` in `AuthContext.jsx` calls
+`verifyOtp({ email, token, type: 'email' })` to consume it. Supabase's email still contains a
+clickable link too (handled transparently by `detectSessionInUrl` in `lib/supabase.js`, kept as
+a fallback per the PRD), but nothing in the app depends on it anymore.
+
+Deliberately did **not** set `shouldCreateUser: false` on the OTP request, despite the PRD
+suggesting it — that flag would block every attendee's *first-ever* login (Supabase
+auto-creates their `auth.users` row on first sign-in; nothing distinguishes "legitimate
+attendee, first login" from "rejected stranger" at the Auth layer). Rejection of unregistered
+emails already happens correctly downstream, via `link_attendee_to_current_user()` finding no
+matching row — a stranger can request a code but can never get past that check.
+
+### Resend SMTP for Auth emails
+
+`supabase/config.toml`'s `[auth.email.smtp]` is configured for Resend (`smtp.resend.com`,
+user `resend`, `pass = "env(RESEND_SMTP_PASS)"`) but **not yet applied to the live project** —
+config.toml changes only take effect after `supabase config push`, which hasn't been run for
+this. Sequence to actually enable it:
+
+1. In Resend's dashboard, add and verify the domain `thepursuitofhistory.org` — this generates
+   DKIM/SPF (on a `send.` subdomain, so it won't conflict with the org's existing IONOS mail)
+   and MX bounce-feedback records. Relay those exact records to whoever administers the
+   `thepursuitofhistory.org` DNS (IONOS) — allow 24–72h for propagation, so do this well before
+   the event.
+2. Once verified, set the SMTP password in the shell that will run the push (don't paste the
+   raw key into chat — same reasoning as the CLI access token earlier):
+   ```powershell
+   $env:RESEND_SMTP_PASS = "re_xxx"
+   npx supabase config push
+   ```
+3. Confirm in Dashboard → Authentication → Emails that sends are going out via Resend, not the
+   built-in sender.
+
+Until this is done, Supabase keeps using its own built-in sender, capped at a **very low**
+default volume (~2/hour) — fine for occasional testing, but this is exactly what will break
+attendee logins on event morning if not fixed beforehand. The `email_sent = 200` rate limit in
+`[auth.rate_limit]` only takes effect once step 2 above has run; it's a no-op with the built-in
+sender.
+
+### Event-reliability checklist (ops, not code)
+
+- Supabase free-tier projects can pause after ~7 days of inactivity — make sure it's not asleep
+  on 2026-08-08 (regular activity, or upgrade to Pro for the event month).
+- Resend's free tier caps at 100 emails/day — event-morning logins + resends + any last testing
+  could exceed that. Upgrade to Resend Pro for the event month, or confirm day-of volume will
+  stay under 100.
+
 ## Email notifications
 
 `supabase/functions/send-session-notification/` is a Supabase Edge Function (Deno), triggered
@@ -119,6 +169,10 @@ npx supabase functions deploy send-session-notification --project-ref xsuuqiinbg
 The "Docker is not running" warning during deploy is harmless — deploy still completes via
 direct asset upload; Docker is only needed for `functions serve` (local testing), not for a
 remote deploy.
+
+This is the same Resend account as the Auth SMTP setup above, just plumbed differently — an
+Edge Function secret here (`supabase secrets set`) vs. a shell env var at `config push` time
+there (`RESEND_SMTP_PASS`). Same API key value works for both.
 
 **Required secrets** (not yet set — sending will fail with a clear "not configured" error
 until they are):

@@ -10,8 +10,9 @@ metadata. There's no self-service way to become an admin (by design — see
 [`operations.md`](./operations.md#granting-admin-access) for how an existing admin/developer
 grants it to a new organizer).
 
-Once flagged, sign in the same way attendees do — enter your email on the login screen and
-click the magic link. You'll land on `/admin` instead of the attendee home screen.
+Once flagged, sign in the same way attendees do — enter your email on the login screen, then
+enter the 6-digit code emailed to you. You'll land on `/admin` instead of the attendee home
+screen.
 
 ## Attendees
 
@@ -62,11 +63,11 @@ form for late additions.
 Some registrants share an email across two people (e.g. a couple who registered together) —
 common enough in real RegFox exports that it's handled automatically. Each still gets their
 own attendee record (see Registrant ID matching, above). When they sign in with the shared
-email, the app shows a one-time "Which of you is this?" screen after the magic link — whoever
-is on that device picks their name, and the choice is remembered on that device going forward.
-Each person logging in from their own device/phone works exactly the same way; nothing needs
-to be done for the shared inbox itself, since each person requests their own separate magic
-link whenever they sign in.
+email, the app shows a one-time "Which of you is this?" screen after they enter their code —
+whoever is on that device picks their name, and the choice is remembered on that device going
+forward. Each person logging in from their own device/phone works exactly the same way; nothing
+needs to be done for the shared inbox itself, since each person requests their own separate
+code whenever they sign in.
 
 ### Adding or editing a single attendee
 
