@@ -1,0 +1,21 @@
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; color: #1c1a17;">
+  <h1 style="color: #a3231f; font-size: 20px; margin-bottom: 4px;">History Camp Boston 2026</h1>
+  <p style="font-size: 16px; line-height: 1.5;">Your sign-in code is:</p>
+
+  <p style="font-size: 36px; font-weight: 700; letter-spacing: 0.2em; text-align: center; background: #faf6ef; border: 1px solid #e6ddd0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+    {{ .Token }}
+  </p>
+
+  <p style="font-size: 15px; line-height: 1.5; color: #555;">
+    Enter this code in the app to sign in. It expires in 1 hour.
+  </p>
+
+  <p style="font-size: 14px; line-height: 1.5; color: #777; margin-top: 24px;">
+    Prefer not to type it? You can also
+    <a href="{{ .ConfirmationURL }}" style="color: #a3231f;">tap this link</a> instead.
+  </p>
+
+  <p style="font-size: 13px; color: #999; margin-top: 32px;">
+    Didn't request this? You can safely ignore this email.
+  </p>
+</div>
