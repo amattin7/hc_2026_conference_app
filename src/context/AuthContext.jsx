@@ -110,6 +110,10 @@ export function AuthProvider({ children }) {
     }
   }, [resolveSession])
 
+  // Requests a 6-digit sign-in code (primary path) — Supabase's email also
+  // includes a clickable link as a fallback, handled transparently by
+  // detectSessionInUrl in lib/supabase.js, but the app UI is built around
+  // typing the code, not the link.
   const signInWithEmail = useCallback(async (email) => {
     setAuthError(null)
     const { error } = await supabase.auth.signInWithOtp({
@@ -117,7 +121,20 @@ export function AuthProvider({ children }) {
       options: { emailRedirectTo: window.location.origin },
     })
     if (error) {
-      setAuthError('We could not send a sign-in link to that address. Please try again.')
+      setAuthError('We could not send a code to that address. Please try again.')
+      return { ok: false }
+    }
+    return { ok: true }
+  }, [])
+
+  // On success this sets the session internally, which fires
+  // onAuthStateChange above and runs the normal resolveSession flow —
+  // nothing else to do here.
+  const verifyCode = useCallback(async (email, token) => {
+    setAuthError(null)
+    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+    if (error) {
+      setAuthError("That code didn't work or has expired. Request a new one.")
       return { ok: false }
     }
     return { ok: true }
@@ -153,6 +170,7 @@ export function AuthProvider({ children }) {
     loading,
     authError,
     signInWithEmail,
+    verifyCode,
     signOut,
     clearAuthError,
   }
