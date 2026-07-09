@@ -235,18 +235,24 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Resend as custom SMTP — Auth Update PRD 4a. Requires thepursuitofhistory.org
-# to be verified in Resend (DKIM/SPF/MX on the send. subdomain) before this
-# actually works; until then Supabase falls back to its own low-volume
-# built-in sender regardless of this config. RESEND_SMTP_PASS must be set in
+# Resend as custom SMTP — Auth Update PRD 4a. RESEND_SMTP_PASS must be set in
 # the shell running `supabase config push` — never commit the real value.
+#
+# admin_email is temporarily Resend's no-verification-needed sandbox sender
+# (onboarding@resend.dev) so testing isn't blocked on thepursuitofhistory.org
+# DNS. Swap to noreply@thepursuitofhistory.org once that domain is verified
+# in Resend — see docs/operations.md for the full sequence. The sandbox
+# sender may only deliver to the email address your Resend account itself
+# is registered under (check Resend's dashboard for the current exact
+# restriction), so it's reliable for your own solo testing but likely won't
+# reach other attendees' real addresses until the real domain is live.
 [auth.email.smtp]
 enabled = true
 host = "smtp.resend.com"
 port = 465
 user = "resend"
 pass = "env(RESEND_SMTP_PASS)"
-admin_email = "noreply@thepursuitofhistory.org"
+admin_email = "onboarding@resend.dev"
 sender_name = "History Camp Boston"
 
 # Code-forward per Auth Update PRD 4c — the 6-digit {{ .Token }} is the

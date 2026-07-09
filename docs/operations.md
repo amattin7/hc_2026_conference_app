@@ -124,26 +124,38 @@ matching row — a stranger can request a code but can never get past that check
 `supabase/config.toml`'s `[auth.email.smtp]` is configured for Resend (`smtp.resend.com`,
 user `resend`, `pass = "env(RESEND_SMTP_PASS)"`) but **not yet applied to the live project** —
 config.toml changes only take effect after `supabase config push`, which hasn't been run for
-this. Sequence to actually enable it:
+this.
+
+**Interim, before the real domain is ready:** `admin_email` is currently set to Resend's
+sandbox sender `onboarding@resend.dev`, which needs no domain verification at all — just set
+`RESEND_SMTP_PASS` and push (step 2 below) to get off Supabase's ~2/hour built-in sender
+immediately. Caveat: the sandbox sender likely only delivers to the email address your Resend
+account is registered under (check Resend's dashboard for the exact current rule) — fine for
+your own solo testing, probably not for emailing other real attendees yet.
+
+**Full sequence once `thepursuitofhistory.org` is ready:**
 
 1. In Resend's dashboard, add and verify the domain `thepursuitofhistory.org` — this generates
    DKIM/SPF (on a `send.` subdomain, so it won't conflict with the org's existing IONOS mail)
    and MX bounce-feedback records. Relay those exact records to whoever administers the
    `thepursuitofhistory.org` DNS (IONOS) — allow 24–72h for propagation, so do this well before
    the event.
-2. Once verified, set the SMTP password in the shell that will run the push (don't paste the
-   raw key into chat — same reasoning as the CLI access token earlier):
+2. Change `admin_email` in `config.toml` from `onboarding@resend.dev` to
+   `noreply@thepursuitofhistory.org`.
+3. Set the SMTP password in the shell that will run the push (don't paste the raw key into
+   chat — same reasoning as the CLI access token earlier):
    ```powershell
    $env:RESEND_SMTP_PASS = "re_xxx"
    npx supabase config push
    ```
-3. Confirm in Dashboard → Authentication → Emails that sends are going out via Resend, not the
+4. Confirm in Dashboard → Authentication → Emails that sends are going out via Resend, not the
    built-in sender.
 
-Until this is done, Supabase keeps using its own built-in sender, capped at a **very low**
-default volume (~2/hour) — fine for occasional testing, but this is exactly what will break
-attendee logins on event morning if not fixed beforehand. The `email_sent = 200` rate limit in
-`[auth.rate_limit]` only takes effect once step 2 above has run; it's a no-op with the built-in
+Until the SMTP push has run (interim sandbox or full domain setup), Supabase keeps using its
+own built-in sender, capped at a **very low** default volume (~2/hour) — fine for occasional
+testing, but this is exactly what will break attendee logins on event morning if not fixed
+beforehand. The `email_sent = 200` rate limit in `[auth.rate_limit]` only takes effect once
+custom SMTP is actually enabled; it's a no-op with the built-in
 sender.
 
 ### Event-reliability checklist (ops, not code)
