@@ -5,6 +5,7 @@ const navItems = [
   { to: '/home', label: 'Home' },
   { to: '/schedule', label: 'Full Schedule' },
   { to: '/my-schedule', label: 'My Schedule' },
+  { to: '/feedback', label: 'Feedback' },
 ]
 
 function navLinkClass({ isActive }) {

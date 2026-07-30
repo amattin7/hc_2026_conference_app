@@ -9,6 +9,11 @@ import Home from './components/Home'
 import Schedule from './components/Schedule'
 import SessionDetail from './components/SessionDetail'
 import MySchedule from './components/MySchedule'
+import FeedbackLauncher from './components/feedback/FeedbackLauncher'
+import OverallFeedbackWizard from './components/feedback/OverallFeedbackWizard'
+import SessionPicker from './components/feedback/SessionPicker'
+import SessionFeedbackPage from './components/feedback/SessionFeedbackPage'
+import FeedbackThanks from './components/feedback/FeedbackThanks'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminAttendees from './components/admin/AdminAttendees'
 import AdminSchedule from './components/admin/AdminSchedule'
@@ -56,6 +61,11 @@ export default function App() {
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/schedule/:sessionId" element={<SessionDetail />} />
             <Route path="/my-schedule" element={<MySchedule />} />
+            <Route path="/feedback" element={<FeedbackLauncher />} />
+            <Route path="/feedback/overall" element={<OverallFeedbackWizard />} />
+            <Route path="/feedback/sessions" element={<SessionPicker />} />
+            <Route path="/feedback/sessions/:sessionId" element={<SessionFeedbackPage />} />
+            <Route path="/feedback/thanks" element={<FeedbackThanks />} />
           </Route>
         </Routes>
       </AuthProvider>

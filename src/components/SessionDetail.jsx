@@ -3,7 +3,7 @@ import { useSchedule } from '../context/ScheduleContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { formatTime } from '../lib/format'
 import StatusBadge from './StatusBadge'
-import FeedbackForm from './FeedbackForm'
+import SessionFeedbackForm from './feedback/SessionFeedbackForm'
 import LoadingScreen from './LoadingScreen'
 
 function PresenterBlock({ name, credentials, bio, website, email }) {
@@ -152,7 +152,7 @@ export default function SessionDetail() {
       <div>
         <h2 className="text-lg font-medium">Feedback</h2>
         <div className="mt-2">
-          <FeedbackForm sessionId={session.id} />
+          <SessionFeedbackForm sessionId={session.id} />
         </div>
       </div>
     </div>

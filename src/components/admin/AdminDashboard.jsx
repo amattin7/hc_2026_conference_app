@@ -12,6 +12,7 @@ export default function AdminDashboard() {
   const [sessions, setSessions] = useState([])
   const [attendeeSessions, setAttendeeSessions] = useState([])
   const [feedback, setFeedback] = useState([])
+  const [overallFeedback, setOverallFeedback] = useState([])
   const [attendeesCount, setAttendeesCount] = useState(0)
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,20 +22,28 @@ export default function AdminDashboard() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [tbRes, sessionsRes, favRes, feedbackRes, attendeesRes, notifRes] = await Promise.all([
-      supabase.from('time_blocks').select('*').order('sort_order'),
-      supabase
-        .from('sessions')
-        .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
-        .order('sort_order'),
-      supabase.from('attendee_sessions').select('session_id'),
-      supabase.from('session_feedback').select('*'),
-      supabase.from('attendees').select('id', { count: 'exact', head: true }),
-      supabase.from('notifications_log').select('*').order('sent_at', { ascending: false }),
-    ])
+    const [tbRes, sessionsRes, favRes, feedbackRes, overallFeedbackRes, attendeesRes, notifRes] =
+      await Promise.all([
+        supabase.from('time_blocks').select('*').order('sort_order'),
+        supabase
+          .from('sessions')
+          .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
+          .order('sort_order'),
+        supabase.from('attendee_sessions').select('session_id'),
+        supabase.from('session_feedback').select('*'),
+        supabase.from('conference_feedback').select('*'),
+        supabase.from('attendees').select('id', { count: 'exact', head: true }),
+        supabase.from('notifications_log').select('*').order('sent_at', { ascending: false }),
+      ])
 
     const error =
-      tbRes.error ?? sessionsRes.error ?? favRes.error ?? feedbackRes.error ?? attendeesRes.error ?? notifRes.error
+      tbRes.error ??
+      sessionsRes.error ??
+      favRes.error ??
+      feedbackRes.error ??
+      overallFeedbackRes.error ??
+      attendeesRes.error ??
+      notifRes.error
 
     if (error) {
       setLoadError(error)
@@ -44,6 +53,7 @@ export default function AdminDashboard() {
       setSessions(sessionsRes.data ?? [])
       setAttendeeSessions(favRes.data ?? [])
       setFeedback(feedbackRes.data ?? [])
+      setOverallFeedback(overallFeedbackRes.data ?? [])
       setAttendeesCount(attendeesRes.count ?? 0)
       setNotifications(notifRes.data ?? [])
     }
@@ -101,6 +111,36 @@ export default function AdminDashboard() {
   const feedbackParticipationPct = attendeesCount
     ? Math.round((attendeesWithFeedback / attendeesCount) * 100)
     : 0
+
+  const overallSubmissions = overallFeedback.length
+  const overallAvgRating = average(overallFeedback.map((f) => f.overall_rating))
+  const overallAvgRecommend = average(overallFeedback.map((f) => f.recommend))
+
+  function exportOverallFeedbackCsv() {
+    const rows = overallFeedback.map((f) => ({
+      overall_rating: f.overall_rating,
+      recommend: f.recommend,
+      travel_from: f.travel_from ?? '',
+      reason: f.reason ?? '',
+      describe_to_friend: f.describe_to_friend ?? '',
+      sunday_tours: f.sunday_tours ?? '',
+      poh_weekend: f.poh_weekend ?? '',
+      how_heard: (f.how_heard ?? []).join('; '),
+      destination: f.destination ?? '',
+      change: f.change ?? '',
+      historian: f.historian ?? '',
+      other_comments: f.other_comments ?? '',
+      submitted_at: f.submitted_at,
+    }))
+    const csv = Papa.unparse(rows)
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'history-camp-overall-feedback.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   function exportFeedbackCsv() {
     const timeBlockById = new Map(timeBlocks.map((b) => [b.id, b]))
@@ -253,6 +293,40 @@ export default function AdminDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">Overall Feedback</h2>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border border-border bg-surface p-4 text-center">
+            <p className="text-2xl font-semibold">{overallSubmissions}</p>
+            <p className="text-sm text-ink/60">Total submissions</p>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4 text-center">
+            <p className="text-2xl font-semibold">
+              {overallAvgRating != null ? overallAvgRating.toFixed(1) : '—'}
+            </p>
+            <p className="text-sm text-ink/60">Avg. rating (of 10)</p>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4 text-center">
+            <p className="text-2xl font-semibold">
+              {overallAvgRecommend != null ? overallAvgRecommend.toFixed(1) : '—'}
+            </p>
+            <p className="text-sm text-ink/60">Avg. would recommend (of 10)</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={exportOverallFeedbackCsv}
+            disabled={overallFeedback.length === 0}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            Export CSV
+          </button>
         </div>
       </section>
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSchedule } from '../context/ScheduleContext'
-import { formatTime } from '../lib/format'
+import { formatTime, sortSessionsChronologically } from '../lib/format'
 import StatusBadge from './StatusBadge'
 import LoadingScreen from './LoadingScreen'
 
@@ -26,18 +26,6 @@ function matchesSearch(session, query) {
   )
 }
 
-function sessionSortKey(session) {
-  return [session.time_block?.sort_order ?? 0, session.sort_order ?? 0]
-}
-
-function sortSessions(sessions) {
-  return sessions.slice().sort((a, b) => {
-    const [aBlock, aSort] = sessionSortKey(a)
-    const [bBlock, bSort] = sessionSortKey(b)
-    return aBlock - bBlock || aSort - bSort
-  })
-}
-
 function buildSections(mode, sessionsByBlock, sessions) {
   if (mode === 'time') {
     return sessionsByBlock.map((block) => ({
@@ -57,7 +45,7 @@ function buildSections(mode, sessionsByBlock, sessions) {
     }
     return Array.from(byRoom.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, list]) => ({ key: name, label: name, sessions: sortSessions(list) }))
+      .map(([name, list]) => ({ key: name, label: name, sessions: sortSessionsChronologically(list) }))
   }
 
   if (mode === 'presenter') {
@@ -74,7 +62,7 @@ function buildSections(mode, sessionsByBlock, sessions) {
     }
     return Array.from(byPresenter.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([name, list]) => ({ key: name, label: name, sessions: sortSessions(list) }))
+      .map(([name, list]) => ({ key: name, label: name, sessions: sortSessionsChronologically(list) }))
   }
 
   // tag
@@ -87,7 +75,7 @@ function buildSections(mode, sessionsByBlock, sessions) {
   }
   return Array.from(byTag.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([tag, list]) => ({ key: tag, label: tag, sessions: sortSessions(list) }))
+    .map(([tag, list]) => ({ key: tag, label: tag, sessions: sortSessionsChronologically(list) }))
 }
 
 function SessionCard({ session }) {

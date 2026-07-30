@@ -26,3 +26,15 @@ export function fromDatetimeLocalInput(value) {
   if (!value) return null
   return new Date(value).toISOString()
 }
+
+// Sessions are fetched in their own sort_order, which is only meaningful
+// within a single time block — anywhere sessions get grouped by something
+// other than time (room, presenter, tag, feedback picker), they need
+// re-sorting chronologically first.
+export function sortSessionsChronologically(sessions) {
+  return sessions.slice().sort((a, b) => {
+    const aBlock = a.time_block?.sort_order ?? 0
+    const bBlock = b.time_block?.sort_order ?? 0
+    return aBlock - bBlock || (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  })
+}
