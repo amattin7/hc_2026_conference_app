@@ -89,13 +89,21 @@ export default function MySchedule() {
               </p>
             )}
 
-            <button
-              type="button"
-              onClick={() => removeFavorite(session.id)}
-              className="mt-3 text-sm font-medium text-ink/60 underline"
-            >
-              Remove from My Schedule
-            </button>
+            <div className="mt-3 flex items-center gap-4">
+              <Link
+                to={`/feedback/sessions/${session.id}`}
+                className="text-sm font-medium text-primary underline"
+              >
+                Give feedback
+              </Link>
+              <button
+                type="button"
+                onClick={() => removeFavorite(session.id)}
+                className="text-sm font-medium text-ink/60 underline"
+              >
+                Remove from My Schedule
+              </button>
+            </div>
           </div>
         )
       })}
