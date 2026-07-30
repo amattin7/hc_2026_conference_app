@@ -12,11 +12,6 @@ const GROUP_MODES = [
   { key: 'tag', label: 'Tag' },
 ]
 
-// Room/presenter/tag sections can run into the dozens, so they start
-// collapsed (tap the one you want) — time/room stay open since there are
-// only a handful of each and browsing them fully is the point.
-const DEFAULT_OPEN_MODES = new Set(['time', 'room'])
-
 function matchesSearch(session, query) {
   if (!query) return true
   const q = query.toLowerCase()
@@ -131,7 +126,7 @@ export default function Schedule() {
   function isSectionCollapsed(key) {
     if (key in collapsed) return collapsed[key]
     if (jumpTo === key) return false
-    return !DEFAULT_OPEN_MODES.has(mode)
+    return true
   }
 
   return (

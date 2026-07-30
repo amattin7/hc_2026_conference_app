@@ -60,6 +60,13 @@ export default function SessionDetail() {
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
+      <Link
+        to="/schedule"
+        className="inline-flex w-fit items-center gap-1 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-primary"
+      >
+        <span aria-hidden="true">‹</span> Back to Schedule
+      </Link>
+
       <div>
         <div className="flex items-start justify-between gap-2">
           <h1 className="text-2xl font-semibold">{session.title}</h1>
