@@ -10,7 +10,9 @@ function PresenterBlock({ name, credentials, bio, website, email }) {
   return (
     <div>
       <p className="text-base font-medium">
-        {name}
+        <Link to={`/schedule?by=presenter&value=${encodeURIComponent(name)}`} className="underline">
+          {name}
+        </Link>
         {credentials ? `, ${credentials}` : ''}
       </p>
       {bio && <p className="mt-2 text-base text-ink/80">{bio}</p>}
@@ -81,9 +83,30 @@ export default function SessionDetail() {
             </>
           )}
         </p>
-        <p className="mt-1 text-base font-medium">{session.room?.name ?? 'Room TBD'}</p>
+        {session.room?.name && (
+          <Link
+            to={`/schedule?by=room&value=${encodeURIComponent(session.room.name)}`}
+            className="mt-1 inline-block text-base font-medium underline"
+          >
+            {session.room.name}
+          </Link>
+        )}
         {session.room?.notes && <p className="mt-1 text-sm text-ink/60">{session.room.notes}</p>}
       </div>
+
+      {session.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {session.tags.map((tag) => (
+            <Link
+              key={tag}
+              to={`/schedule?by=tag&value=${encodeURIComponent(tag)}`}
+              className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary-dark"
+            >
+              {tag}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <button
         type="button"

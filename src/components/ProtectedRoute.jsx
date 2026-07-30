@@ -4,14 +4,14 @@ import LoadingScreen from './LoadingScreen'
 import AttendeeSelect from './AttendeeSelect'
 
 export default function ProtectedRoute({ children, requireRole }) {
-  const { session, role, loading, needsAttendeeSelection } = useAuth()
+  const { session, effectiveRole, loading, needsAttendeeSelection } = useAuth()
 
   if (loading) return <LoadingScreen />
 
   if (!session) return <Navigate to="/" replace />
 
-  if (requireRole && role !== requireRole) {
-    return <Navigate to={role === 'admin' ? '/admin' : '/home'} replace />
+  if (requireRole && effectiveRole !== requireRole) {
+    return <Navigate to={effectiveRole === 'admin' ? '/admin' : '/home'} replace />
   }
 
   if (requireRole === 'attendee' && needsAttendeeSelection) {

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(undefined)
 
 const ACTIVE_ATTENDEE_KEY_PREFIX = 'hc_active_attendee_'
+const PREVIEW_ATTENDEE_KEY = 'hc_admin_preview_attendee'
 
 // Organizers running the admin console typically aren't in the RegFox
 // attendee list at all, so an admin login must never be gated on finding an
@@ -39,6 +40,12 @@ export function AuthProvider({ children }) {
   const [role, setRole] = useState(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
+  // Lets an admin click into the attendee-facing app without a real
+  // attendees row (admins usually aren't RegFox registrants) — sessionStorage
+  // so it doesn't leak into a shared/public machine's next session.
+  const [previewAttendee, setPreviewAttendee] = useState(
+    () => sessionStorage.getItem(PREVIEW_ATTENDEE_KEY) === '1',
+  )
 
   const resolveSession = useCallback(async (nextSession) => {
     setSession(nextSession)
@@ -141,10 +148,19 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    sessionStorage.removeItem(PREVIEW_ATTENDEE_KEY)
     await supabase.auth.signOut()
   }, [])
 
   const clearAuthError = useCallback(() => setAuthError(null), [])
+
+  const togglePreviewAttendee = useCallback(() => {
+    setPreviewAttendee((prev) => {
+      const next = !prev
+      sessionStorage.setItem(PREVIEW_ATTENDEE_KEY, next ? '1' : '0')
+      return next
+    })
+  }, [])
 
   const selectAttendee = useCallback(
     (attendeeId) => {
@@ -158,6 +174,7 @@ export function AuthProvider({ children }) {
 
   const attendee = attendees.find((a) => a.id === activeAttendeeId) ?? null
   const needsAttendeeSelection = role === 'attendee' && attendees.length > 1 && !attendee
+  const effectiveRole = role === 'admin' && previewAttendee ? 'attendee' : role
 
   const value = {
     session,
@@ -167,6 +184,9 @@ export function AuthProvider({ children }) {
     needsAttendeeSelection,
     selectAttendee,
     role,
+    effectiveRole,
+    previewAttendee: role === 'admin' && previewAttendee,
+    togglePreviewAttendee,
     loading,
     authError,
     signInWithEmail,

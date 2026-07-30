@@ -14,10 +14,18 @@ function navLinkClass({ isActive }) {
 }
 
 export default function Layout() {
-  const { signOut } = useAuth()
+  const { signOut, previewAttendee, togglePreviewAttendee } = useAuth()
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
+      {previewAttendee && (
+        <div className="flex items-center justify-between bg-primary px-4 py-2 text-sm text-parchment">
+          <span>Previewing as attendee</span>
+          <button type="button" onClick={togglePreviewAttendee} className="font-medium underline">
+            Back to admin
+          </button>
+        </div>
+      )}
       <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
         <span className="text-lg font-semibold text-primary">History Camp</span>
         <button

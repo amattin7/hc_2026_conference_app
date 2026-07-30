@@ -14,7 +14,7 @@ function tabClass({ isActive }) {
 }
 
 export default function AdminLayout() {
-  const { signOut, user } = useAuth()
+  const { signOut, user, togglePreviewAttendee } = useAuth()
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
@@ -22,6 +22,13 @@ export default function AdminLayout() {
         <span className="text-lg font-semibold text-primary">History Camp Admin</span>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-ink/60 sm:inline">{user?.email}</span>
+          <button
+            type="button"
+            onClick={togglePreviewAttendee}
+            className="rounded-md border border-primary px-3 py-2 text-sm font-medium text-primary"
+          >
+            Preview as attendee
+          </button>
           <button
             type="button"
             onClick={signOut}
