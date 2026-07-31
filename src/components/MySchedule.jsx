@@ -80,16 +80,7 @@ export default function MySchedule() {
 
         return (
           <div key={session.id} className="rounded-lg border border-border bg-surface p-4">
-            <p className="text-sm text-ink/60">
-              {session.time_block?.label}
-              {session.time_block && (
-                <>
-                  {' · '}
-                  {formatTime(session.time_block.start_time)} –{' '}
-                  {formatTime(session.time_block.end_time)}
-                </>
-              )}
-            </p>
+            <p className="text-sm text-ink/60">{session.time_block?.label}</p>
 
             <div className="mt-1 flex items-start justify-between gap-2">
               <Link

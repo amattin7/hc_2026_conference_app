@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useSchedule } from '../context/ScheduleContext'
 import { useFavorites } from '../context/FavoritesContext'
-import { formatTime } from '../lib/format'
 import StatusBadge from './StatusBadge'
 import SessionFeedbackForm from './feedback/SessionFeedbackForm'
 import LoadingScreen from './LoadingScreen'
@@ -87,16 +86,7 @@ export default function SessionDetail() {
       </div>
 
       <div className="rounded-lg border border-border bg-surface p-4">
-        <p className="text-sm text-ink/60">
-          {session.time_block?.label}
-          {session.time_block && (
-            <>
-              {' · '}
-              {formatTime(session.time_block.start_time)} –{' '}
-              {formatTime(session.time_block.end_time)}
-            </>
-          )}
-        </p>
+        <p className="text-sm text-ink/60">{session.time_block?.label}</p>
         {session.room?.name && (
           <Link
             to={`/schedule?by=room&value=${encodeURIComponent(session.room.name)}`}
