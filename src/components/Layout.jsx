@@ -1,18 +1,50 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-const navItems = [
-  { to: '/home', label: 'Home' },
-  { to: '/schedule', label: 'Full Schedule' },
-  { to: '/my-schedule', label: 'My Schedule' },
-  { to: '/feedback', label: 'Feedback' },
-]
-
-function navLinkClass({ isActive }) {
-  return `flex flex-1 flex-col items-center justify-center gap-0.5 py-3 text-base font-medium ${
-    isActive ? 'text-primary' : 'text-ink/60'
-  }`
+function HomeIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+    </svg>
+  )
 }
+
+function ScheduleIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M8 9h8M8 13h8M8 17h5" />
+    </svg>
+  )
+}
+
+function MyScheduleIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+    </svg>
+  )
+}
+
+function FeedbackIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5V16H5.5A1.5 1.5 0 0 1 4 14.5Z" />
+      <circle cx="9" cy="10" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="10" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="10" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+const navItems = [
+  { to: '/home', label: 'Home', Icon: HomeIcon },
+  { to: '/schedule', label: 'Full Schedule', Icon: ScheduleIcon },
+  { to: '/my-schedule', label: 'My Schedule', Icon: MyScheduleIcon },
+  { to: '/feedback', label: 'Feedback', Icon: FeedbackIcon },
+]
 
 export default function Layout() {
   const { signOut, previewAttendee, togglePreviewAttendee } = useAuth()
@@ -38,14 +70,23 @@ export default function Layout() {
         </button>
       </header>
 
-      <main className="flex flex-1 flex-col pb-28">
+      <main className="flex flex-1 flex-col pb-36">
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]">
-        {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} className={navLinkClass}>
-            {item.label}
+      <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] flex gap-1 rounded-3xl border border-border bg-surface p-2 shadow-lg shadow-ink/10">
+        {navItems.map(({ to, label, Icon }) => (
+          <NavLink key={to} to={to} className="flex flex-1 justify-center">
+            {({ isActive }) => (
+              <span
+                className={`flex flex-col items-center gap-0.5 whitespace-nowrap rounded-2xl px-3 py-2.5 text-xs ${
+                  isActive ? 'bg-primary font-semibold text-parchment' : 'font-medium text-ink/50'
+                }`}
+              >
+                <Icon className="h-6 w-6" />
+                {label}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
