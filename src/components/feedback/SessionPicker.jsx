@@ -9,7 +9,8 @@ function matchesSearch(session, blockLabel, query) {
   return (
     blockLabel.toLowerCase().includes(q) ||
     session.title.toLowerCase().includes(q) ||
-    session.presenter_name.toLowerCase().includes(q)
+    session.presenter_name.toLowerCase().includes(q) ||
+    (session.session_description ?? '').toLowerCase().includes(q)
   )
 }
 

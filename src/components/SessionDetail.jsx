@@ -15,7 +15,14 @@ function PresenterBlock({ name, credentials, bio, website, email }) {
         </Link>
         {credentials ? `, ${credentials}` : ''}
       </p>
-      {bio && <p className="mt-2 text-base text-ink/80">{bio}</p>}
+      {bio && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-sm font-medium text-primary">
+            Presenter bio
+          </summary>
+          <p className="mt-2 text-base text-ink/80">{bio}</p>
+        </details>
+      )}
       {(website || email) && (
         <p className="mt-2 text-sm text-ink/60">
           {website && (
@@ -128,10 +135,10 @@ export default function SessionDetail() {
       </button>
 
       {session.session_description && (
-        <div>
-          <h2 className="text-lg font-medium">About this session</h2>
+        <details className="rounded-lg border border-border bg-surface p-4">
+          <summary className="cursor-pointer text-lg font-medium">Full Description</summary>
           <p className="mt-2 text-base text-ink/80">{session.session_description}</p>
-        </div>
+        </details>
       )}
 
       <div>

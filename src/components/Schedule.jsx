@@ -17,7 +17,8 @@ function matchesSearch(session, query) {
   const q = query.toLowerCase()
   return (
     session.title.toLowerCase().includes(q) ||
-    session.presenter_name.toLowerCase().includes(q)
+    session.presenter_name.toLowerCase().includes(q) ||
+    (session.session_description ?? '').toLowerCase().includes(q)
   )
 }
 
@@ -152,7 +153,7 @@ export default function Schedule() {
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by title or presenter"
+        placeholder="Search by title, presenter, or description"
         className="w-full rounded-md border border-border bg-surface px-4 py-3 text-base"
       />
 
