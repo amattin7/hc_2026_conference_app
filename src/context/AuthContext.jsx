@@ -6,6 +6,35 @@ const AuthContext = createContext(undefined)
 const ACTIVE_ATTENDEE_KEY_PREFIX = 'hc_active_attendee_'
 const PREVIEW_ATTENDEE_KEY = 'hc_admin_preview_attendee'
 
+// Mobile browsers (iOS Safari/PWA especially) can suspend an in-flight
+// request when the app is backgrounded — e.g. switching to Mail to read a
+// sign-in code — and never deliver a response when it resumes. Supabase's
+// auth client serializes operations behind an internal lock, so a hung
+// request here can freeze verifyOtp/getSession callers indefinitely with no
+// way to recover short of force-quitting the app. Race every auth network
+// call against a timeout so it always settles one way or another.
+const AUTH_NETWORK_TIMEOUT_MS = 20000
+const TIMEOUT_ERROR = new Error('timeout')
+
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(TIMEOUT_ERROR), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (err) => {
+        clearTimeout(timer)
+        reject(err)
+      },
+    )
+  })
+}
+
+const CONNECTION_ERROR_MESSAGE =
+  "That's taking longer than expected. Please check your connection and try again."
+
 // Organizers running the admin console typically aren't in the RegFox
 // attendee list at all, so an admin login must never be gated on finding an
 // attendees row — only attendee logins go through link_attendee_to_current_user().
@@ -66,13 +95,23 @@ export function AuthProvider({ children }) {
       return
     }
 
-    const { data, error } = await supabase.rpc('link_attendee_to_current_user')
+    let data, error
+    try {
+      ;({ data, error } = await withTimeout(
+        supabase.rpc('link_attendee_to_current_user'),
+        AUTH_NETWORK_TIMEOUT_MS,
+      ))
+    } catch (timeoutErr) {
+      error = timeoutErr
+    }
 
     if (error || !data || data.length === 0) {
       setAuthError(
-        error
-          ? 'Something went wrong signing you in. Please try again.'
-          : "We couldn't find a registration for that email. Please check your registration confirmation or visit the help desk.",
+        error === TIMEOUT_ERROR
+          ? CONNECTION_ERROR_MESSAGE
+          : error
+            ? 'Something went wrong signing you in. Please try again.'
+            : "We couldn't find a registration for that email. Please check your registration confirmation or visit the help desk.",
       )
       await supabase.auth.signOut()
       setSession(null)
@@ -123,12 +162,24 @@ export function AuthProvider({ children }) {
   // typing the code, not the link.
   const signInWithEmail = useCallback(async (email) => {
     setAuthError(null)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    })
+    let error
+    try {
+      ;({ error } = await withTimeout(
+        supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: window.location.origin },
+        }),
+        AUTH_NETWORK_TIMEOUT_MS,
+      ))
+    } catch (timeoutErr) {
+      error = timeoutErr
+    }
     if (error) {
-      setAuthError('We could not send a code to that address. Please try again.')
+      setAuthError(
+        error === TIMEOUT_ERROR
+          ? CONNECTION_ERROR_MESSAGE
+          : 'We could not send a code to that address. Please try again.',
+      )
       return { ok: false }
     }
     return { ok: true }
@@ -139,9 +190,21 @@ export function AuthProvider({ children }) {
   // nothing else to do here.
   const verifyCode = useCallback(async (email, token) => {
     setAuthError(null)
-    const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+    let error
+    try {
+      ;({ error } = await withTimeout(
+        supabase.auth.verifyOtp({ email, token, type: 'email' }),
+        AUTH_NETWORK_TIMEOUT_MS,
+      ))
+    } catch (timeoutErr) {
+      error = timeoutErr
+    }
     if (error) {
-      setAuthError("That code didn't work or has expired. Request a new one.")
+      setAuthError(
+        error === TIMEOUT_ERROR
+          ? CONNECTION_ERROR_MESSAGE
+          : "That code didn't work or has expired. Request a new one.",
+      )
       return { ok: false }
     }
     return { ok: true }
