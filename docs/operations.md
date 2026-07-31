@@ -121,50 +121,32 @@ matching row — a stranger can request a code but can never get past that check
 
 ### Resend SMTP for Auth emails
 
-`supabase/config.toml`'s `[auth.email.smtp]` is configured for Resend (`smtp.resend.com`,
-user `resend`, `pass = "env(RESEND_SMTP_PASS)"`) but **not yet applied to the live project** —
-config.toml changes only take effect after `supabase config push`, which hasn't been run for
-this.
+`supabase/config.toml`'s `[auth.email.smtp]` is live on the hosted project (pushed via
+`supabase config push`, `RESEND_SMTP_PASS` set from the Resend API key at push time — never
+committed). Sender is `noreply@hc2026app.org`.
 
-**Interim, before the real domain is ready:** `admin_email` is currently set to Resend's
-sandbox sender `onboarding@resend.dev`, which needs no domain verification at all — just set
-`RESEND_SMTP_PASS` and push (step 2 below) to get off Supabase's ~2/hour built-in sender
-immediately. Caveat: the sandbox sender likely only delivers to the email address your Resend
-account is registered under (check Resend's dashboard for the exact current rule) — fine for
-your own solo testing, probably not for emailing other real attendees yet.
+`hc2026app.org` is a dedicated throwaway domain (registered on Cloudflare, independent of
+`thepursuitofhistory.org`'s own DNS/mail) verified in Resend for SPF/DKIM/DMARC, and separately
+pointed at the Vercel deployment as a friendlier public URL. `site_url` and
+`additional_redirect_urls` in `config.toml` include `https://hc2026app.org` alongside the
+original `hc-2026-conference-app.vercel.app`, so magic-link redirects work from either origin.
 
-**Full sequence once `thepursuitofhistory.org` is ready:**
+To change the sender or re-push after editing `config.toml`:
+```bash
+export RESEND_SMTP_PASS=<the Resend API key>
+npx supabase config push
+```
 
-1. In Resend's dashboard, add and verify the domain `thepursuitofhistory.org` — this generates
-   DKIM/SPF (on a `send.` subdomain, so it won't conflict with the org's existing IONOS mail)
-   and MX bounce-feedback records. Relay those exact records to whoever administers the
-   `thepursuitofhistory.org` DNS (IONOS) — allow 24–72h for propagation, so do this well before
-   the event.
-2. Change `admin_email` in `config.toml` from `onboarding@resend.dev` to
-   `noreply@thepursuitofhistory.org`.
-3. Set the SMTP password in the shell that will run the push (don't paste the raw key into
-   chat — same reasoning as the CLI access token earlier):
-   ```powershell
-   $env:RESEND_SMTP_PASS = "re_xxx"
-   npx supabase config push
-   ```
-4. Confirm in Dashboard → Authentication → Emails that sends are going out via Resend, not the
-   built-in sender.
-
-Until the SMTP push has run (interim sandbox or full domain setup), Supabase keeps using its
-own built-in sender, capped at a **very low** default volume (~2/hour) — fine for occasional
-testing, but this is exactly what will break attendee logins on event morning if not fixed
-beforehand. The `email_sent = 200` rate limit in `[auth.rate_limit]` only takes effect once
-custom SMTP is actually enabled; it's a no-op with the built-in
-sender.
+The `email_sent = 200` rate limit in `[auth.rate_limit]` only takes effect with custom SMTP
+enabled (which it now is) — it's a no-op under Supabase's built-in sender.
 
 ### Event-reliability checklist (ops, not code)
 
 - Supabase free-tier projects can pause after ~7 days of inactivity — make sure it's not asleep
   on 2026-08-08 (regular activity, or upgrade to Pro for the event month).
 - Resend's free tier caps at 100 emails/day — event-morning logins + resends + any last testing
-  could exceed that. Upgrade to Resend Pro for the event month, or confirm day-of volume will
-  stay under 100.
+  could exceed that. Upgrade to Resend Pro for the event month (planned for the week before the
+  event), or confirm day-of volume will stay under 100.
 
 ## Email notifications
 
@@ -202,4 +184,6 @@ inside every Edge Function's environment — no need to set those as secrets.
 
 ## Deploy
 
-Not yet configured — PRD calls for Vercel with auto-deploy on push to `main` (§4.2, §10.3).
+Vercel auto-deploys on push to `claude/history-camp-boston-pwa-kume5k` (this repo's default
+branch — there is no `main`). Live at `https://hc-2026-conference-app.vercel.app` and, once
+DNS/Vercel domain setup finished, `https://hc2026app.org`.
