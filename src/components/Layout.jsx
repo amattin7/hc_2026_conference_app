@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/historycamp-logo.png'
 
 function HomeIcon({ className }) {
   return (
@@ -60,7 +61,7 @@ export default function Layout() {
         </div>
       )}
       <header className="flex items-center justify-between border-b border-border bg-surface px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
-        <span className="text-lg font-semibold text-primary">History Camp</span>
+        <img src={logo} alt="History Camp" className="h-7 w-auto" />
         <button
           type="button"
           onClick={signOut}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/historycamp-logo.png'
 
 const RESEND_COOLDOWN_SECONDS = 45
 
@@ -54,8 +55,8 @@ export default function Login() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm text-center">
-        <h1 className="text-3xl font-semibold text-primary">History Camp</h1>
-        <p className="mt-1 text-lg">Boston 2026</p>
+        <img src={logo} alt="History Camp" className="mx-auto h-14 w-auto" />
+        <p className="mt-2 text-lg">Boston 2026</p>
         <p className="mt-6 text-base text-ink/80">Your guide to a great day of history.</p>
 
         {step === 'email' ? (
