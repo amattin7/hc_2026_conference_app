@@ -99,6 +99,9 @@ export default function Login() {
               We've sent a 6-digit code to <span className="font-medium">{email}</span>. Enter it
               below.
             </p>
+            <p className="mt-1 text-sm text-ink/70">
+              No rush — this code stays valid for a full hour.
+            </p>
 
             <label htmlFor="code" className="mt-6 block text-base font-medium">
               Sign-in code
@@ -141,7 +144,7 @@ export default function Login() {
                 disabled={cooldown > 0 || sending}
                 className="text-primary underline disabled:text-ink/40 disabled:no-underline"
               >
-                {cooldown > 0 ? `Resend code (${cooldown}s)` : 'Resend code'}
+                {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend code'}
               </button>
             </div>
           </form>

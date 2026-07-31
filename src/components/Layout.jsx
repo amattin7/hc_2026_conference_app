@@ -9,7 +9,7 @@ const navItems = [
 ]
 
 function navLinkClass({ isActive }) {
-  return `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-sm font-medium ${
+  return `flex flex-1 flex-col items-center justify-center gap-0.5 py-3 text-base font-medium ${
     isActive ? 'text-primary' : 'text-ink/60'
   }`
 }
@@ -27,7 +27,7 @@ export default function Layout() {
           </button>
         </div>
       )}
-      <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
+      <header className="flex items-center justify-between border-b border-border bg-surface px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <span className="text-lg font-semibold text-primary">History Camp</span>
         <button
           type="button"
@@ -38,11 +38,11 @@ export default function Layout() {
         </button>
       </header>
 
-      <main className="flex flex-1 flex-col pb-20">
+      <main className="flex flex-1 flex-col pb-28">
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface">
+      <nav className="fixed inset-x-0 bottom-0 flex border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => (
           <NavLink key={item.to} to={item.to} className={navLinkClass}>
             {item.label}
