@@ -6,20 +6,19 @@ const AuthContext = createContext(undefined)
 const ACTIVE_ATTENDEE_KEY_PREFIX = 'hc_active_attendee_'
 const PREVIEW_ATTENDEE_KEY = 'hc_admin_preview_attendee'
 
-// Mobile browsers (iOS Safari/PWA especially) can suspend an in-flight
-// request when the app is backgrounded — e.g. switching to Mail to read a
-// sign-in code — and never deliver a response when it resumes. Supabase's
-// auth client serializes operations behind an internal lock, so a hung
-// request here can freeze verifyOtp/getSession callers indefinitely with no
-// way to recover short of force-quitting the app. Race every auth network
-// call against a timeout so it always settles one way or another.
-const AUTH_NETWORK_TIMEOUT_MS = 20000
+// Mobile browsers (iOS Safari/PWA especially) can leave a dead keep-alive
+// connection behind when the app is backgrounded — e.g. switching to Mail to
+// read a sign-in code — and the very next request after returning to the
+// foreground can hang on it forever. Supabase's auth client also serializes
+// operations behind an internal lock, so a hung link_attendee_to_current_user
+// call here can freeze the verifyOtp caller too, indefinitely, with no way
+// to recover short of force-quitting the app.
 const TIMEOUT_ERROR = new Error('timeout')
 
-function withTimeout(promise, ms) {
+function withTimeout(promiseFactory, ms) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(TIMEOUT_ERROR), ms)
-    promise.then(
+    promiseFactory().then(
       (value) => {
         clearTimeout(timer)
         resolve(value)
@@ -31,6 +30,30 @@ function withTimeout(promise, ms) {
     )
   })
 }
+
+// The linking RPC is safe to retry (idempotent, no single-use token), so we
+// can recover from a stale connection silently — a fresh request opens a new
+// connection and almost always succeeds immediately. Kept short so the
+// common case resolves fast; worst case (both attempts stall) still finishes
+// comfortably inside AUTH_OUTER_TIMEOUT_MS below.
+const LINK_RPC_TIMEOUT_MS = 8000
+
+async function withTimeoutAndRetry(promiseFactory, ms) {
+  try {
+    return await withTimeout(promiseFactory, ms)
+  } catch (err) {
+    if (err !== TIMEOUT_ERROR) throw err
+    return await withTimeout(promiseFactory, ms)
+  }
+}
+
+// signInWithOtp/verifyOtp are NOT retried automatically: verifyOtp's token is
+// single-use, so replaying it after a client-side timeout could show a false
+// "invalid code" error if the original request actually succeeded server-side
+// (the outcome we saw in testing). Timeout is generous — comfortably longer
+// than the linking RPC's worst case above — so it only fires for a genuinely
+// dead connection, not while the RPC retry is still working things out.
+const AUTH_OUTER_TIMEOUT_MS = 20000
 
 const CONNECTION_ERROR_MESSAGE =
   "That's taking longer than expected. Please check your connection and try again."
@@ -97,9 +120,9 @@ export function AuthProvider({ children }) {
 
     let data, error
     try {
-      ;({ data, error } = await withTimeout(
-        supabase.rpc('link_attendee_to_current_user'),
-        AUTH_NETWORK_TIMEOUT_MS,
+      ;({ data, error } = await withTimeoutAndRetry(
+        () => supabase.rpc('link_attendee_to_current_user'),
+        LINK_RPC_TIMEOUT_MS,
       ))
     } catch (timeoutErr) {
       error = timeoutErr
@@ -165,11 +188,12 @@ export function AuthProvider({ children }) {
     let error
     try {
       ;({ error } = await withTimeout(
-        supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: window.location.origin },
-        }),
-        AUTH_NETWORK_TIMEOUT_MS,
+        () =>
+          supabase.auth.signInWithOtp({
+            email,
+            options: { emailRedirectTo: window.location.origin },
+          }),
+        AUTH_OUTER_TIMEOUT_MS,
       ))
     } catch (timeoutErr) {
       error = timeoutErr
@@ -193,8 +217,8 @@ export function AuthProvider({ children }) {
     let error
     try {
       ;({ error } = await withTimeout(
-        supabase.auth.verifyOtp({ email, token, type: 'email' }),
-        AUTH_NETWORK_TIMEOUT_MS,
+        () => supabase.auth.verifyOtp({ email, token, type: 'email' }),
+        AUTH_OUTER_TIMEOUT_MS,
       ))
     } catch (timeoutErr) {
       error = timeoutErr
