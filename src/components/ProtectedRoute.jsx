@@ -8,10 +8,17 @@ export default function ProtectedRoute({ children, requireRole }) {
 
   if (loading) return <LoadingScreen />
 
-  if (!session) return <Navigate to="/" replace />
+  if (!session) {
+    return <Navigate to={requireRole === 'admin' ? '/admin/login' : '/'} replace />
+  }
 
   if (requireRole && effectiveRole !== requireRole) {
-    return <Navigate to={effectiveRole === 'admin' ? '/admin' : '/home'} replace />
+    return (
+      <Navigate
+        to={effectiveRole === 'admin' ? '/admin' : requireRole === 'admin' ? '/admin/login' : '/home'}
+        replace
+      />
+    )
   }
 
   if (requireRole === 'attendee' && needsAttendeeSelection) {

@@ -10,9 +10,30 @@ metadata. There's no self-service way to become an admin (by design — see
 [`operations.md`](./operations.md#granting-admin-access) for how an existing admin/developer
 grants it to a new organizer).
 
-Once flagged, sign in the same way attendees do — enter your email on the login screen, then
-enter the 6-digit code emailed to you. You'll land on `/admin` instead of the attendee home
-screen.
+Once flagged, sign in at `/admin/login` — enter your email, then enter the 6-digit code emailed
+to you. You'll land on `/admin`. This is the one place in the app that still asks for a code:
+attendees no longer verify their email at all (see below), but the admin console has full
+read/write access to everyone's data, so it keeps real proof of email ownership.
+
+## How attendees sign in now
+
+There's no code or link for attendees anymore — testing found the old 6-digit sign-in code
+confusing for the audience, so it was dropped in favor of a frictionless flow:
+
+- Opening the app lands on a welcome screen with a **View Schedule** button — tapping it grants
+  full access to browse the schedule immediately, no email required.
+- Tapping **My Schedule** or **Feedback** for the first time on a device asks for the email they
+  registered with on RegFox. If it matches a row in the attendee list, they're in — no code, no
+  confirmation email, nothing to click.
+- That's a one-time thing per device/browser: once claimed, the same phone or laptop won't ask
+  again, and it stays claimed indefinitely (e.g. someone browsing from a laptop one day and
+  picking up on their phone another day both keep working, permanently, without either device
+  getting signed out).
+
+This is a deliberate tradeoff: anyone who knows or guesses another attendee's registered email
+could view/edit that person's schedule or submit feedback under their name. For this event that
+risk was judged low and acceptable relative to the usability win — flag it if that calculus ever
+needs revisiting for a different event.
 
 ## Attendees
 
@@ -62,12 +83,11 @@ form for late additions.
 
 Some registrants share an email across two people (e.g. a couple who registered together) —
 common enough in real RegFox exports that it's handled automatically. Each still gets their
-own attendee record (see Registrant ID matching, above). When they sign in with the shared
-email, the app shows a one-time "Which of you is this?" screen after they enter their code —
-whoever is on that device picks their name, and the choice is remembered on that device going
-forward. Each person logging in from their own device/phone works exactly the same way; nothing
-needs to be done for the shared inbox itself, since each person requests their own separate
-code whenever they sign in.
+own attendee record (see Registrant ID matching, above). When they claim the shared email, the
+app shows a one-time "Which of you is this?" screen — whoever is on that device picks their
+name, and the choice is remembered on that device going forward. Each person doing this from
+their own device/phone works exactly the same way; nothing needs to be done for the shared
+inbox itself.
 
 ### Adding or editing a single attendee
 

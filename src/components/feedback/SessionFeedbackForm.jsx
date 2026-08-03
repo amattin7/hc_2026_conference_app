@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
 export default function SessionFeedbackForm({ sessionId, onSubmitted }) {
-  const { attendee } = useAuth()
+  const { attendee, previewAttendee } = useAuth()
+  const location = useLocation()
   const [existing, setExisting] = useState(null)
   const [loading, setLoading] = useState(true)
   const [score, setScore] = useState(0)
@@ -33,6 +35,10 @@ export default function SessionFeedbackForm({ sessionId, onSubmitted }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!attendee) {
+      setError("Feedback isn't available in attendee preview mode.")
+      return
+    }
     if (score < 1) {
       setError('Please choose a score.')
       return
@@ -64,6 +70,22 @@ export default function SessionFeedbackForm({ sessionId, onSubmitted }) {
 
   if (loading) {
     return <p className="text-sm text-ink/60">Loading feedback…</p>
+  }
+
+  if (!attendee && !previewAttendee) {
+    return (
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <p className="text-base text-ink/70">
+          Enter the email you registered with to leave feedback on this session.
+        </p>
+        <Link
+          to={`/claim-email?next=${encodeURIComponent(location.pathname)}`}
+          className="mt-3 inline-block rounded-md bg-primary px-4 py-3 text-base font-medium text-parchment"
+        >
+          Enter your email
+        </Link>
+      </div>
+    )
   }
 
   if (existing) {

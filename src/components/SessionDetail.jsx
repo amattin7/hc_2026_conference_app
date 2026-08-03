@@ -1,6 +1,7 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useSchedule } from '../context/ScheduleContext'
 import { useFavorites } from '../context/FavoritesContext'
+import { useAuth } from '../context/AuthContext'
 import StatusBadge from './StatusBadge'
 import SessionFeedbackForm from './feedback/SessionFeedbackForm'
 import LoadingScreen from './LoadingScreen'
@@ -45,6 +46,9 @@ export default function SessionDetail() {
   const { sessionId } = useParams()
   const { getSession, loading } = useSchedule()
   const { isFavorite, toggleFavorite } = useFavorites()
+  const { attendee, previewAttendee } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   if (loading) return <LoadingScreen />
 
@@ -63,6 +67,18 @@ export default function SessionDetail() {
 
   const favorited = isFavorite(session.id)
   const coPresenters = Array.isArray(session.co_presenters) ? session.co_presenters : []
+
+  function handleInterestClick() {
+    // Browsing anonymously (no attendee claimed yet): send them to claim
+    // their email first, then bring them right back here. Admin preview
+    // never has a real attendees row and isn't meant to claim one, so it
+    // keeps the old silent-no-op behavior instead.
+    if (!attendee && !previewAttendee) {
+      navigate(`/claim-email?next=${encodeURIComponent(location.pathname)}`)
+      return
+    }
+    toggleFavorite(session.id)
+  }
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-6 pb-6">
@@ -114,7 +130,7 @@ export default function SessionDetail() {
 
       <button
         type="button"
-        onClick={() => toggleFavorite(session.id)}
+        onClick={handleInterestClick}
         className={`w-full rounded-md px-4 py-3 text-base font-medium ${
           favorited
             ? 'border border-primary text-primary'

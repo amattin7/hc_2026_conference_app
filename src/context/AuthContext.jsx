@@ -6,13 +6,19 @@ const AuthContext = createContext(undefined)
 const ACTIVE_ATTENDEE_KEY_PREFIX = 'hc_active_attendee_'
 const PREVIEW_ATTENDEE_KEY = 'hc_admin_preview_attendee'
 
+// Everyone gets one of these on first load, silently — it's what lets
+// anyone browse the schedule with zero action on their part. Claiming an
+// attendee by email (see claimAttendeeByEmail) just links additional rows
+// to whichever anonymous identity happens to be asking.
+const ANON_SIGN_IN_ERROR_MESSAGE =
+  "We're having trouble connecting right now. Please check your connection and reload."
+
 // Mobile browsers (iOS Safari/PWA especially) can leave a dead keep-alive
-// connection behind when the app is backgrounded — e.g. switching to Mail to
-// read a sign-in code — and the very next request after returning to the
-// foreground can hang on it forever. Supabase's auth client also serializes
-// operations behind an internal lock, so a hung link_attendee_to_current_user
-// call here can freeze the verifyOtp caller too, indefinitely, with no way
-// to recover short of force-quitting the app.
+// connection behind when the app is backgrounded, and the very next request
+// after returning to the foreground can hang on it forever. Supabase's auth
+// client also serializes operations behind an internal lock, so a hung
+// claim_attendee_by_email call here can freeze other auth calls too,
+// indefinitely, with no way to recover short of force-quitting the app.
 const TIMEOUT_ERROR = new Error('timeout')
 
 function withTimeout(promiseFactory, ms) {
@@ -31,12 +37,12 @@ function withTimeout(promiseFactory, ms) {
   })
 }
 
-// The linking RPC is safe to retry (idempotent, no single-use token), so we
-// can recover from a stale connection silently — a fresh request opens a new
-// connection and almost always succeeds immediately. Kept short so the
-// common case resolves fast; worst case (both attempts stall) still finishes
-// comfortably inside AUTH_OUTER_TIMEOUT_MS below.
-const LINK_RPC_TIMEOUT_MS = 8000
+// The claim RPC is safe to retry (idempotent — inserts are on conflict do
+// nothing), so we can recover from a stale connection silently — a fresh
+// request opens a new connection and almost always succeeds immediately.
+// Kept short so the common case resolves fast; worst case (both attempts
+// stall) still finishes comfortably inside AUTH_OUTER_TIMEOUT_MS below.
+const CLAIM_RPC_TIMEOUT_MS = 8000
 
 async function withTimeoutAndRetry(promiseFactory, ms) {
   try {
@@ -58,9 +64,11 @@ const AUTH_OUTER_TIMEOUT_MS = 20000
 const CONNECTION_ERROR_MESSAGE =
   "That's taking longer than expected. Please check your connection and try again."
 
-// Organizers running the admin console typically aren't in the RegFox
-// attendee list at all, so an admin login must never be gated on finding an
-// attendees row — only attendee logins go through link_attendee_to_current_user().
+// Everyone who isn't an admin — including anonymous, not-yet-claimed
+// browsers — is treated as "attendee" so schedule browsing needs no gate at
+// all. Organizers running the admin console typically aren't in the RegFox
+// attendee list either way, so admin status is never gated on finding an
+// attendees row.
 function roleFromUser(user) {
   return user?.app_metadata?.role === 'admin' ? 'admin' : 'attendee'
 }
@@ -99,6 +107,12 @@ export function AuthProvider({ children }) {
     () => sessionStorage.getItem(PREVIEW_ATTENDEE_KEY) === '1',
   )
 
+  // Applies attendee/role state for whatever session we're handed. For a
+  // non-admin session this is purely a *read* of whatever's already linked
+  // in attendee_links — claiming a new attendee by email is a separate,
+  // explicit action (claimAttendeeByEmail below), not something that runs
+  // automatically on every session resolve. Zero linked attendees is a
+  // normal, expected state (anyone just browsing), not an error.
   const resolveSession = useCallback(async (nextSession) => {
     setSession(nextSession)
 
@@ -110,59 +124,55 @@ export function AuthProvider({ children }) {
     }
 
     const nextRole = roleFromUser(nextSession.user)
+    setRole(nextRole)
 
     if (nextRole === 'admin') {
-      setRole('admin')
       setAttendees([])
       setActiveAttendeeId(null)
       return
     }
 
-    let data, error
-    try {
-      ;({ data, error } = await withTimeoutAndRetry(
-        () => supabase.rpc('link_attendee_to_current_user'),
-        LINK_RPC_TIMEOUT_MS,
-      ))
-    } catch (timeoutErr) {
-      error = timeoutErr
-    }
+    const { data, error } = await supabase.from('attendees').select('*')
+    const linked = error ? [] : (data ?? [])
+    setAttendees(linked)
 
-    if (error || !data || data.length === 0) {
-      setAuthError(
-        error === TIMEOUT_ERROR
-          ? CONNECTION_ERROR_MESSAGE
-          : error
-            ? 'Something went wrong signing you in. Please try again.'
-            : "We couldn't find a registration for that email. Please check your registration confirmation or visit the help desk.",
-      )
-      await supabase.auth.signOut()
-      setSession(null)
-      setAttendees([])
-      setActiveAttendeeId(null)
-      setRole(null)
-      return
-    }
-
-    setRole('attendee')
-    setAttendees(data)
-
-    if (data.length === 1) {
-      setActiveAttendeeId(data[0].id)
+    if (linked.length === 1) {
+      setActiveAttendeeId(linked[0].id)
     } else {
       const stored = readStoredAttendeeId(nextSession.user.id)
-      setActiveAttendeeId(data.some((a) => a.id === stored) ? stored : null)
+      setActiveAttendeeId(linked.some((a) => a.id === stored) ? stored : null)
     }
   }, [])
 
   useEffect(() => {
     let active = true
 
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+    async function bootstrap() {
+      const {
+        data: { session: initialSession },
+      } = await supabase.auth.getSession()
+
+      let effectiveSession = initialSession
+      if (!effectiveSession) {
+        // First visit on this device: nobody has to type anything to browse
+        // the schedule, so we establish that access silently up front.
+        const { data, error } = await supabase.auth.signInAnonymously()
+        if (error) {
+          if (active) {
+            setAuthError(ANON_SIGN_IN_ERROR_MESSAGE)
+            setLoading(false)
+          }
+          return
+        }
+        effectiveSession = data.session
+      }
+
       if (!active) return
-      await resolveSession(initialSession)
+      await resolveSession(effectiveSession)
       if (active) setLoading(false)
-    })
+    }
+
+    bootstrap()
 
     const {
       data: { subscription },
@@ -234,9 +244,57 @@ export function AuthProvider({ children }) {
     return { ok: true }
   }, [])
 
+  // Looks up attendees by email and links every match to whichever identity
+  // (anonymous or admin-preview-adjacent) is currently asking — no code, no
+  // link, no proof of ownership. Returns the same shape the old OTP-linking
+  // RPC did, so the "more than one person shares this email" picker keeps
+  // working unchanged.
+  const claimAttendeeByEmail = useCallback(
+    async (email) => {
+      setAuthError(null)
+      let data, error
+      try {
+        ;({ data, error } = await withTimeoutAndRetry(
+          () => supabase.rpc('claim_attendee_by_email', { p_email: email }),
+          CLAIM_RPC_TIMEOUT_MS,
+        ))
+      } catch (timeoutErr) {
+        error = timeoutErr
+      }
+
+      if (error || !data || data.length === 0) {
+        setAuthError(
+          error === TIMEOUT_ERROR
+            ? CONNECTION_ERROR_MESSAGE
+            : error
+              ? 'Something went wrong looking that up. Please try again.'
+              : "We couldn't find a registration for that email. Please check your registration confirmation or visit the help desk.",
+        )
+        return { ok: false }
+      }
+
+      setAttendees(data)
+      if (data.length === 1) {
+        setActiveAttendeeId(data[0].id)
+      } else {
+        const stored = session ? readStoredAttendeeId(session.user.id) : null
+        setActiveAttendeeId(data.some((a) => a.id === stored) ? stored : null)
+      }
+      return { ok: true }
+    },
+    [session],
+  )
+
+  // Ends whatever identity is currently active and immediately establishes a
+  // fresh anonymous one — each triggers onAuthStateChange above, which does
+  // the actual state resolution, same as every other auth transition here.
+  // The "immediately re-anonymize" part matters on a shared/public device:
+  // without it, the next person to use the browser would silently inherit
+  // whatever attendee the previous person had claimed.
   const signOut = useCallback(async () => {
     sessionStorage.removeItem(PREVIEW_ATTENDEE_KEY)
     await supabase.auth.signOut()
+    await supabase.auth.signInAnonymously()
   }, [])
 
   const clearAuthError = useCallback(() => setAuthError(null), [])
@@ -278,6 +336,7 @@ export function AuthProvider({ children }) {
     authError,
     signInWithEmail,
     verifyCode,
+    claimAttendeeByEmail,
     signOut,
     clearAuthError,
   }

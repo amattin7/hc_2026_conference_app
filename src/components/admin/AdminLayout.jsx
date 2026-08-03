@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 const navItems = [
@@ -15,6 +15,12 @@ function tabClass({ isActive }) {
 
 export default function AdminLayout() {
   const { signOut, user, togglePreviewAttendee } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/admin/login')
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
@@ -31,7 +37,7 @@ export default function AdminLayout() {
           </button>
           <button
             type="button"
-            onClick={signOut}
+            onClick={handleSignOut}
             className="rounded-md border border-border px-3 py-2 text-sm font-medium"
           >
             Sign out

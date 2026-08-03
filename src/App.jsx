@@ -3,8 +3,10 @@ import { AuthProvider } from './context/AuthContext'
 import { ScheduleProvider } from './context/ScheduleContext'
 import { FavoritesProvider } from './context/FavoritesContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import RequireAttendee from './components/RequireAttendee'
+import ClaimEmailRedirect from './components/ClaimEmailRedirect'
 import Layout from './components/Layout'
-import Login from './components/Login'
+import Welcome from './components/Welcome'
 import Home from './components/Home'
 import Schedule from './components/Schedule'
 import SessionDetail from './components/SessionDetail'
@@ -14,6 +16,7 @@ import OverallFeedbackWizard from './components/feedback/OverallFeedbackWizard'
 import SessionPicker from './components/feedback/SessionPicker'
 import SessionFeedbackPage from './components/feedback/SessionFeedbackPage'
 import FeedbackThanks from './components/feedback/FeedbackThanks'
+import AdminLogin from './components/admin/AdminLogin'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminAttendees from './components/admin/AdminAttendees'
 import AdminSchedule from './components/admin/AdminSchedule'
@@ -34,7 +37,8 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Welcome />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           <Route
             path="/admin"
@@ -60,12 +64,62 @@ export default function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/schedule/:sessionId" element={<SessionDetail />} />
-            <Route path="/my-schedule" element={<MySchedule />} />
-            <Route path="/feedback" element={<FeedbackLauncher />} />
-            <Route path="/feedback/overall" element={<OverallFeedbackWizard />} />
-            <Route path="/feedback/sessions" element={<SessionPicker />} />
-            <Route path="/feedback/sessions/:sessionId" element={<SessionFeedbackPage />} />
-            <Route path="/feedback/thanks" element={<FeedbackThanks />} />
+            <Route
+              path="/claim-email"
+              element={
+                <RequireAttendee>
+                  <ClaimEmailRedirect />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/my-schedule"
+              element={
+                <RequireAttendee>
+                  <MySchedule />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback"
+              element={
+                <RequireAttendee>
+                  <FeedbackLauncher />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback/overall"
+              element={
+                <RequireAttendee>
+                  <OverallFeedbackWizard />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback/sessions"
+              element={
+                <RequireAttendee>
+                  <SessionPicker />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback/sessions/:sessionId"
+              element={
+                <RequireAttendee>
+                  <SessionFeedbackPage />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback/thanks"
+              element={
+                <RequireAttendee>
+                  <FeedbackThanks />
+                </RequireAttendee>
+              }
+            />
           </Route>
         </Routes>
       </AuthProvider>

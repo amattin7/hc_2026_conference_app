@@ -51,16 +51,18 @@ ones — `db push` only applies files it hasn't seen before.
 ## Granting admin access
 
 There's no UI for this (by design — see `supabase/migrations/20260706120100_rls_policies.sql`
-for why role lives in `app_metadata`, not `user_metadata`). To promote a user to admin:
+for why role lives in `app_metadata`, not `user_metadata`). Admins are the only users who still
+go through OTP (see "Sign-in" below), at `/admin/login`. To promote a user to admin:
 
-1. Have them enter their email on the login screen once, so their `auth.users` row exists
-   (**don't** enter the code they receive yet — until the role is set, they'd be routed through
-   the attendee-linking flow and rejected for having no matching registration).
+1. Have them request a code once from `/admin/login`, so their `auth.users` row exists. It's fine
+   if they enter the code before the role is set — admin login no longer touches the
+   attendee-linking flow at all, so they'd just land in the ordinary browsing view, not get
+   rejected. Have them request a fresh code after step 2 instead of reusing the first one.
 2. Run:
    ```bash
    npx supabase db query "update auth.users set raw_app_meta_data = raw_app_meta_data || '{\"role\":\"admin\"}'::jsonb where email = '<email>' returning email, raw_app_meta_data;" --linked
    ```
-3. They enter the code and land on `/admin`.
+3. They sign in again at `/admin/login` and land on `/admin`.
 
 ## Running one-off SQL
 
@@ -70,13 +72,19 @@ so double-check the SQL (especially `update`/`delete`) before running.
 
 ## Test data cleanup
 
-`attendees` (roster rows) and `auth.users` (logins) are linked by `attendees.user_id`, but
-`on delete set null` — deleting one doesn't cascade to the other:
+`attendees` (roster rows) and `auth.users` (anonymous or admin identities) are linked by the
+`attendee_links` join table (`attendee_id`, `auth_user_id`), `on delete cascade` in both
+directions — unlike the old `attendees.user_id` column this replaced, deleting either side
+cleans up the link row automatically:
 
-- Delete a test login from Dashboard → Authentication → Users → their attendee row survives,
-  just unlinked, ready to be logged into again.
-- Delete/truncate `attendees` → cascades to that person's `attendee_sessions` (favorites) and
-  `session_feedback`, but their login still exists.
+- Delete a test `auth.users` row from Dashboard → Authentication → Users → its `attendee_links`
+  rows are removed too; the attendee row itself survives, ready to be claimed by email again from
+  a fresh browser session.
+- Delete/truncate `attendees` → cascades to that person's `attendee_links`, `attendee_sessions`
+  (favorites), and `session_feedback`.
+- Because every browser gets its own anonymous `auth.users` row on first visit (see "Sign-in"
+  below), test devices accumulate one each — safe to bulk-delete from Authentication → Users
+  between test rounds; each browser just gets a new one next load.
 
 **Full reset before the real event:** truncate `attendees` (cascades favorites/feedback with
 it), bulk-delete test users from Authentication → Users, then import the real registrant CSV.
@@ -90,34 +98,52 @@ There are two synthetic test rows currently in `attendees` sharing `you+couple@g
 to verify the shared-email fix below — safe to delete once you've tried the "Which of you is
 this?" flow yourself, or leave them as a standing test fixture.
 
-## Identity model: email is not unique
+## Identity model: email is not unique, and isn't verified either
 
-`attendees.email` and `attendees.user_id` are **not** unique constraints (migration
-`20260708120000`) — real RegFox exports include registrants who share one email across two
-people (e.g. a couple), so one login can legitimately resolve to more than one `attendees` row.
-`regfox_registrant_id` is the real per-registration identity now (unique, nullable for
-manually-added attendees). `link_attendee_to_current_user()` links every matching row to the
-signed-in user, and the client (`AuthContext`) prompts a "Which of you is this?" screen
-(`AttendeeSelect.jsx`) when more than one resolves, remembering the choice in
-`localStorage` per device — not server-side, since it's just "which hat is this browser
-wearing," not a second identity system. `auth_attendee_id()` returns a `setof uuid` rather than
-a scalar for the same reason; the `attendee_sessions`/`session_feedback` owner RLS policies use
+`attendees.email` is **not** a unique constraint (migration `20260708120000`) — real RegFox
+exports include registrants who share one email across two people (e.g. a couple), so claiming
+by email can legitimately resolve to more than one `attendees` row. `regfox_registrant_id` is the
+real per-registration identity (unique, nullable for manually-added attendees).
+`claim_attendee_by_email(p_email)` (migration `20260803150000`) links every matching row to
+whatever `auth.uid()` is currently asking, and the client (`AuthContext`) prompts a "Which of you
+is this?" screen (`AttendeeSelect.jsx`) when more than one resolves, remembering the choice in
+`localStorage` per device — not server-side, since it's just "which hat is this browser wearing,"
+not a second identity system.
+
+Linking itself lives in `attendee_links` (`attendee_id`, `auth_user_id`), a many-to-many table —
+replaced the old single `attendees.user_id` column because identities are now per-device
+(anonymous sessions, see below) rather than per-person: the same attendee claiming their email
+from a laptop Wednesday and a phone Saturday needs both to keep working simultaneously, forever,
+without either bumping the other. `auth_attendee_id()` reads `attendee_links` and returns a
+`setof uuid` (not a scalar) for the couples case above; the `attendee_sessions`/
+`session_feedback`/`conference_feedback` owner RLS policies use
 `attendee_id in (select auth_attendee_id())` accordingly.
 
-## Sign-in: OTP codes, not magic links
+## Sign-in: anonymous browsing + unverified email claim (admins still use OTP)
 
-Auth Update PRD (2026-07-08). `Login.jsx` is a two-step email → 6-digit code screen:
-`signInWithOtp` requests the code, a new `verifyCode()` in `AuthContext.jsx` calls
-`verifyOtp({ email, token, type: 'email' })` to consume it. Supabase's email still contains a
-clickable link too (handled transparently by `detectSessionInUrl` in `lib/supabase.js`, kept as
-a fallback per the PRD), but nothing in the app depends on it anymore.
+Testing surfaced the 6-digit OTP code as a real point of confusion for the attendee base, for low
+practical benefit on a low-stakes community event — the org accepted the (small) risk of someone
+entering another attendee's email as a reasonable trade for a frictionless flow. Current model:
 
-Deliberately did **not** set `shouldCreateUser: false` on the OTP request, despite the PRD
-suggesting it — that flag would block every attendee's *first-ever* login (Supabase
-auto-creates their `auth.users` row on first sign-in; nothing distinguishes "legitimate
-attendee, first login" from "rejected stranger" at the Auth layer). Rejection of unregistered
-emails already happens correctly downstream, via `link_attendee_to_current_user()` finding no
-matching row — a stranger can request a code but can never get past that check.
+- **Everyone** gets a Supabase anonymous session automatically on first load
+  (`supabase.auth.signInAnonymously()` in `AuthContext`'s bootstrap effect) — no action, no email.
+  That alone is enough to browse the schedule (`Welcome.jsx` → `/home`, `/schedule`), since those
+  tables' RLS policies only ever checked `auth.role() = 'authenticated'`, which anonymous sessions
+  satisfy too.
+- Saving sessions or leaving feedback requires claiming an attendee identity: `ClaimEmail.jsx`
+  (shown by the `RequireAttendee` route guard whenever no attendee is linked yet) calls
+  `claimAttendeeByEmail()` → the `claim_attendee_by_email` RPC. No code, no link, no proof of
+  ownership — just a lookup.
+- **Admins are the exception.** `/admin/login` (`AdminLogin.jsx`) still runs the original two-step
+  email → 6-digit code flow: `signInWithEmail()` calls `signInWithOtp`, `verifyCode()` calls
+  `verifyOtp({ email, token, type: 'email' })`. The admin console has full read/write access to
+  every attendee's data, so it keeps real proof-of-email-ownership. Supabase's email still
+  contains a clickable link too (handled transparently by `detectSessionInUrl` in
+  `lib/supabase.js`), but nothing in the app depends on it.
+
+Signing out (either layout's "Sign out" button) ends the current session and immediately
+establishes a fresh anonymous one — deliberately, so a shared/public device doesn't silently
+hand the next person whatever attendee the previous person had claimed.
 
 ### Resend SMTP for Auth emails
 
@@ -144,9 +170,10 @@ enabled (which it now is) — it's a no-op under Supabase's built-in sender.
 
 - Supabase free-tier projects can pause after ~7 days of inactivity — make sure it's not asleep
   on 2026-08-08 (regular activity, or upgrade to Pro for the event month).
-- Resend's free tier caps at 100 emails/day — event-morning logins + resends + any last testing
-  could exceed that. Upgrade to Resend Pro for the event month (planned for the week before the
-  event), or confirm day-of volume will stay under 100.
+- Resend's free tier caps at 100 emails/day. Since attendee sign-in no longer sends OTP email at
+  all (only admins do, rarely), day-of volume should stay well under 100 — the free tier is
+  probably fine now, but double-check if the notification feature (PRD §8.1, also Resend) sees
+  heavy same-day use.
 
 ## Email notifications
 

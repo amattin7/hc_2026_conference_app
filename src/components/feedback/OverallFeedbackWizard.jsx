@@ -103,6 +103,14 @@ export default function OverallFeedbackWizard() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
+  if (!attendee) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
+        <p className="text-base text-ink/70">Feedback isn't available in attendee preview mode.</p>
+      </div>
+    )
+  }
+
   const current = STEPS[step]
   const answer = answers[current.key]
   const isLastStep = step === STEPS.length - 1

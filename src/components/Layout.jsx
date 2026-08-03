@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logo from '../assets/historycamp-logo.png'
 
@@ -49,6 +49,12 @@ const navItems = [
 
 export default function Layout() {
   const { signOut, previewAttendee, togglePreviewAttendee } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/')
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
@@ -64,7 +70,7 @@ export default function Layout() {
         <img src={logo} alt="History Camp" className="h-7 w-auto" />
         <button
           type="button"
-          onClick={signOut}
+          onClick={handleSignOut}
           className="rounded-md px-3 py-2 text-sm font-medium text-ink/70"
         >
           Sign out
