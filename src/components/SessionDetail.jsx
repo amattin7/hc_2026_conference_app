@@ -137,7 +137,7 @@ export default function SessionDetail() {
             : 'bg-primary text-parchment'
         }`}
       >
-        {favorited ? "I'm interested ✓" : "I'm interested"}
+        {favorited ? 'Added to My Schedule ✓' : 'Add to my Schedule'}
       </button>
 
       {session.session_description && (

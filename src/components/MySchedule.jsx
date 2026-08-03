@@ -55,7 +55,7 @@ export default function MySchedule() {
           <Link to="/schedule" className="text-primary underline">
             full schedule
           </Link>{' '}
-          and tap "I'm interested" on anything that catches your eye.
+          and tap "Add to my Schedule" on anything that catches your eye.
         </p>
       )}
 
@@ -103,8 +103,9 @@ export default function MySchedule() {
             )}
 
             {hasConflict && (
-              <p className="mt-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary-dark">
-                You already have another session at this time — you can only attend one.
+              <p className="mt-2 rounded-md bg-yellow-100 px-3 py-2 text-sm text-yellow-900">
+                You've added multiple talks during the same time. Feel free to float from room to
+                room!
               </p>
             )}
 

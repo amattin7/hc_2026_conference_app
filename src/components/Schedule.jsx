@@ -75,29 +75,42 @@ function buildSections(mode, sessionsByBlock, sessions) {
 }
 
 function SessionCard({ session }) {
+  const [expanded, setExpanded] = useState(false)
+
   return (
-    <Link
-      to={`/schedule/${session.id}`}
-      className="block rounded-lg border border-border bg-surface p-4"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <p
-          className={`text-base font-medium ${
-            session.status === 'canceled' ? 'line-through text-ink/50' : ''
-          }`}
-        >
-          {session.title}
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <Link to={`/schedule/${session.id}`} className="block">
+        <div className="flex items-start justify-between gap-2">
+          <p
+            className={`text-base font-medium ${
+              session.status === 'canceled' ? 'line-through text-ink/50' : ''
+            }`}
+          >
+            {session.title}
+          </p>
+          <StatusBadge status={session.status} />
+        </div>
+        <p className="mt-1 text-sm text-ink/70">{session.presenter_name}</p>
+        <p className="mt-1 text-sm text-ink/70">
+          {session.time_block?.label ?? 'Time TBD'} · {session.room?.name ?? 'Room TBD'}
         </p>
-        <StatusBadge status={session.status} />
-      </div>
-      <p className="mt-1 text-sm text-ink/70">{session.presenter_name}</p>
-      <p className="mt-1 text-sm text-ink/70">
-        {session.time_block?.label ?? 'Time TBD'} · {session.room?.name ?? 'Room TBD'}
-      </p>
+      </Link>
+
       {session.session_description && (
-        <p className="mt-2 line-clamp-2 text-sm text-ink/60">{session.session_description}</p>
+        <>
+          <p className={`mt-2 text-sm text-ink/60 ${expanded ? '' : 'line-clamp-2'}`}>
+            {session.session_description}
+          </p>
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="mt-1 text-sm font-medium text-primary underline"
+          >
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
+        </>
       )}
-    </Link>
+    </div>
   )
 }
 
