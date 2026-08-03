@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useSchedule } from '../context/ScheduleContext'
+import { useFavorites } from '../context/FavoritesContext'
+import { useAuth } from '../context/AuthContext'
 import { formatTime, sortSessionsChronologically } from '../lib/format'
 import StatusBadge from './StatusBadge'
 import LoadingScreen from './LoadingScreen'
@@ -76,6 +78,23 @@ function buildSections(mode, sessionsByBlock, sessions) {
 
 function SessionCard({ session }) {
   const [expanded, setExpanded] = useState(false)
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const { attendee, previewAttendee } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  const favorited = isFavorite(session.id)
+
+  function handleAddToSchedule() {
+    // Browsing anonymously (no attendee claimed yet): send them to claim
+    // their email first, then bring them right back to this list — same
+    // pattern as the "I'm interested" button on the session detail page.
+    if (!attendee && !previewAttendee) {
+      navigate(`/claim-email?next=${encodeURIComponent(location.pathname + location.search)}`)
+      return
+    }
+    toggleFavorite(session.id)
+  }
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
@@ -97,19 +116,29 @@ function SessionCard({ session }) {
       </Link>
 
       {session.session_description && (
-        <>
-          <p className={`mt-2 text-sm text-ink/60 ${expanded ? '' : 'line-clamp-2'}`}>
-            {session.session_description}
-          </p>
+        <p className={`mt-2 text-sm text-ink/60 ${expanded ? '' : 'line-clamp-2'}`}>
+          {session.session_description}
+        </p>
+      )}
+
+      <div className="mt-2 flex items-center gap-4">
+        {session.session_description && (
           <button
             type="button"
             onClick={() => setExpanded((prev) => !prev)}
-            className="mt-1 text-sm font-medium text-primary underline"
+            className="text-sm font-medium text-primary underline"
           >
             {expanded ? 'Show less' : 'Read more'}
           </button>
-        </>
-      )}
+        )}
+        <button
+          type="button"
+          onClick={handleAddToSchedule}
+          className="text-sm font-medium text-primary underline"
+        >
+          {favorited ? 'Added to My Schedule ✓' : 'Add to my Schedule'}
+        </button>
+      </div>
     </div>
   )
 }
