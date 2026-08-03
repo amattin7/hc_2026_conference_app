@@ -27,7 +27,7 @@ export default function ClaimEmail() {
       <div className="w-full max-w-sm text-center">
         <h1 className="text-2xl font-semibold text-primary">What's your email?</h1>
         <p className="mt-2 text-base text-ink/70">
-          Enter the email you registered with on RegFox to save sessions and leave feedback.
+          Enter the email you registered with to save sessions and leave feedback.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 text-left">
