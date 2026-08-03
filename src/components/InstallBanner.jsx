@@ -33,15 +33,18 @@ function MoreMenuIcon({ className }) {
   )
 }
 
-function Step({ number, icon, children }) {
+function Step({ number, icon, children, note }) {
   return (
     <li className="flex items-start gap-3">
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-parchment">
         {number}
       </span>
-      <span className="flex flex-1 items-center gap-2 text-sm text-ink/80">
-        {children}
-        {icon}
+      <span className="flex flex-1 flex-col gap-1">
+        <span className="flex items-center gap-2 text-sm text-ink/80">
+          {children}
+          {icon}
+        </span>
+        {note && <span className="text-xs text-ink/50">{note}</span>}
       </span>
     </li>
   )
@@ -119,11 +122,18 @@ export default function InstallBanner() {
               <ol className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
                 {ios ? (
                   <>
-                    <Step number={1} icon={<ShareIcon className="h-5 w-5 text-ink/60" />}>
+                    <Step
+                      number={1}
+                      icon={<ShareIcon className="h-5 w-5 text-ink/60" />}
+                      note={'Don\'t see it? Tap the ••• button first, then "Share"'}
+                    >
                       Tap the <strong>Share</strong> icon in Safari's toolbar
                     </Step>
-                    <Step number={2}>
-                      Scroll down and tap <strong>"Add to Home Screen"</strong>
+                    <Step
+                      number={2}
+                      note={'Don\'t see it? Tap "More" in that menu, then look for it there'}
+                    >
+                      Tap <strong>"Add to Home Screen"</strong>
                     </Step>
                     <Step number={3}>
                       Tap <strong>"Add"</strong> in the top-right corner
