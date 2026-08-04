@@ -6,7 +6,7 @@ import StatusBadge from './StatusBadge'
 import SessionFeedbackForm from './feedback/SessionFeedbackForm'
 import LoadingScreen from './LoadingScreen'
 
-function PresenterBlock({ name, credentials, bio, website, email }) {
+function PresenterBlock({ name, credentials, bio, website }) {
   return (
     <div>
       <p className="text-base font-medium">
@@ -23,19 +23,11 @@ function PresenterBlock({ name, credentials, bio, website, email }) {
           <p className="mt-2 text-base text-ink/80">{bio}</p>
         </details>
       )}
-      {(website || email) && (
+      {website && (
         <p className="mt-2 text-sm text-ink/60">
-          {website && (
-            <a href={website} target="_blank" rel="noreferrer" className="underline">
-              {website}
-            </a>
-          )}
-          {website && email && ' · '}
-          {email && (
-            <a href={`mailto:${email}`} className="underline">
-              {email}
-            </a>
-          )}
+          <a href={website} target="_blank" rel="noreferrer" className="underline">
+            {website}
+          </a>
         </p>
       )}
     </div>
@@ -155,7 +147,6 @@ export default function SessionDetail() {
             credentials={session.presenter_credentials}
             bio={session.presenter_bio}
             website={session.presenter_website}
-            email={session.presenter_email}
           />
         </div>
       </div>
