@@ -5,6 +5,7 @@ const navItems = [
   { to: '/admin/attendees', label: 'Attendees' },
   { to: '/admin/schedule', label: 'Schedule' },
   { to: '/admin/dashboard', label: 'Dashboard' },
+  { to: '/admin/feedback', label: 'Feedback' },
 ]
 
 function tabClass({ isActive }) {

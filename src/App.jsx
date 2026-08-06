@@ -21,6 +21,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminAttendees from './components/admin/AdminAttendees'
 import AdminSchedule from './components/admin/AdminSchedule'
 import AdminDashboard from './components/admin/AdminDashboard'
+import AdminFeedback from './components/admin/AdminFeedback'
 
 function AttendeeArea() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="attendees" element={<AdminAttendees />} />
             <Route path="schedule" element={<AdminSchedule />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="feedback" element={<AdminFeedback />} />
           </Route>
 
           <Route
