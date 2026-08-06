@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider } from './context/AuthContext'
 import { ScheduleProvider } from './context/ScheduleContext'
 import { FavoritesProvider } from './context/FavoritesContext'
@@ -37,6 +38,7 @@ function AttendeeArea() {
 export default function App() {
   return (
     <BrowserRouter>
+      <Analytics />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Welcome />} />
