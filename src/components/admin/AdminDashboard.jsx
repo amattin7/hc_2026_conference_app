@@ -4,24 +4,27 @@ import { supabase } from '../../lib/supabase'
 export default function AdminDashboard() {
   const [sessions, setSessions] = useState([])
   const [attendeeSessions, setAttendeeSessions] = useState([])
+  const [attendees, setAttendees] = useState([])
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [interestSortDesc, setInterestSortDesc] = useState(true)
   const [interestExpanded, setInterestExpanded] = useState(false)
+  const [checkInExpanded, setCheckInExpanded] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [sessionsRes, favRes, notifRes] = await Promise.all([
+    const [sessionsRes, favRes, attendeesRes, notifRes] = await Promise.all([
       supabase
         .from('sessions')
         .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
         .order('sort_order'),
       supabase.from('attendee_sessions').select('session_id'),
+      supabase.from('attendees').select('id, checked_in'),
       supabase.from('notifications_log').select('*').order('sent_at', { ascending: false }),
     ])
 
-    const error = sessionsRes.error ?? favRes.error ?? notifRes.error
+    const error = sessionsRes.error ?? favRes.error ?? attendeesRes.error ?? notifRes.error
 
     if (error) {
       setLoadError(error)
@@ -29,6 +32,7 @@ export default function AdminDashboard() {
       setLoadError(null)
       setSessions(sessionsRes.data ?? [])
       setAttendeeSessions(favRes.data ?? [])
+      setAttendees(attendeesRes.data ?? [])
       setNotifications(notifRes.data ?? [])
     }
     setLoading(false)
@@ -39,6 +43,11 @@ export default function AdminDashboard() {
   }, [load])
 
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions])
+
+  const totalAttendees = attendees.length
+  const checkedInCount = attendees.filter((a) => a.checked_in).length
+  const notCheckedInCount = totalAttendees - checkedInCount
+  const checkedInPct = totalAttendees ? Math.round((checkedInCount / totalAttendees) * 100) : 0
 
   const interestRows = useMemo(() => {
     const counts = new Map()
@@ -59,6 +68,38 @@ export default function AdminDashboard() {
       {loadError && (
         <p className="text-sm text-primary-dark">Couldn't load dashboard data: {loadError.message}</p>
       )}
+
+      <section className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setCheckInExpanded((v) => !v)}
+          className="flex items-center justify-between rounded-md bg-surface px-3 py-3 text-left"
+        >
+          <h2 className="text-xl font-semibold">Check-In</h2>
+          <span className="text-ink/50">{checkInExpanded ? '–' : '+'}</span>
+        </button>
+
+        {checkInExpanded && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border border-border bg-surface p-4 text-center">
+              <p className="text-2xl font-semibold">{totalAttendees}</p>
+              <p className="text-sm text-ink/60">Total attendees</p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4 text-center">
+              <p className="text-2xl font-semibold">{checkedInCount}</p>
+              <p className="text-sm text-ink/60">Checked in</p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4 text-center">
+              <p className="text-2xl font-semibold">{notCheckedInCount}</p>
+              <p className="text-sm text-ink/60">Not checked in</p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4 text-center">
+              <p className="text-2xl font-semibold">{checkedInPct}%</p>
+              <p className="text-sm text-ink/60">Checked in</p>
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="flex flex-col gap-3">
         <button
