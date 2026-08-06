@@ -56,25 +56,34 @@ export default function Layout() {
     navigate('/')
   }
 
+  function handleBackToAdmin() {
+    togglePreviewAttendee()
+    navigate('/admin')
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
       {previewAttendee && (
         <div className="flex items-center justify-between bg-primary px-4 py-2 text-sm text-parchment">
           <span>Previewing as attendee</span>
-          <button type="button" onClick={togglePreviewAttendee} className="font-medium underline">
+          <button type="button" onClick={handleBackToAdmin} className="font-medium underline">
             Back to admin
           </button>
         </div>
       )}
       <header className="flex items-center justify-between border-b border-border bg-surface px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <img src={logo} alt="History Camp" className="h-7 w-auto" />
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="rounded-md px-3 py-2 text-sm font-medium text-ink/70"
-        >
-          Sign out
-        </button>
+        {/* Previewing admins exit via "Back to admin" above — a real sign-out
+            here would end their actual admin login, not just the preview. */}
+        {!previewAttendee && (
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="rounded-md px-3 py-2 text-sm font-medium text-ink/70"
+          >
+            Sign out
+          </button>
+        )}
       </header>
 
       <main className="flex flex-1 flex-col pb-36">

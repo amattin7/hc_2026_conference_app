@@ -23,6 +23,11 @@ export default function AdminLayout() {
     navigate('/admin/login')
   }
 
+  function handlePreviewAsAttendee() {
+    togglePreviewAttendee()
+    navigate('/home')
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
       <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
@@ -31,7 +36,7 @@ export default function AdminLayout() {
           <span className="hidden text-sm text-ink/60 sm:inline">{user?.email}</span>
           <button
             type="button"
-            onClick={togglePreviewAttendee}
+            onClick={handlePreviewAsAttendee}
             className="rounded-md border border-primary px-3 py-2 text-sm font-medium text-primary"
           >
             Preview as attendee
