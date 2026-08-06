@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 export default function FeedbackLauncher() {
   const { attendee } = useAuth()
   const [alreadySubmitted, setAlreadySubmitted] = useState(false)
+  const [guideAlreadySubmitted, setGuideAlreadySubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -15,13 +16,13 @@ export default function FeedbackLauncher() {
         setLoading(false)
         return
       }
-      const { data } = await supabase
-        .from('conference_feedback')
-        .select('id')
-        .eq('attendee_id', attendee.id)
-        .maybeSingle()
+      const [overallRes, guideRes] = await Promise.all([
+        supabase.from('conference_feedback').select('id').eq('attendee_id', attendee.id).maybeSingle(),
+        supabase.from('app_guide_feedback').select('id').eq('attendee_id', attendee.id).maybeSingle(),
+      ])
       if (active) {
-        setAlreadySubmitted(!!data)
+        setAlreadySubmitted(!!overallRes.data)
+        setGuideAlreadySubmitted(!!guideRes.data)
         setLoading(false)
       }
     }
@@ -64,6 +65,24 @@ export default function FeedbackLauncher() {
         <p className="mt-2 text-lg font-semibold">Rate a Session</p>
         <p className="mt-1 text-sm text-ink/60">Score a talk you attended and leave notes for the speaker.</p>
       </Link>
+
+      {loading ? null : guideAlreadySubmitted ? (
+        <div className="rounded-xl border border-border bg-surface p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">This app</p>
+          <p className="mt-2 text-lg font-semibold">Online Guide Feedback</p>
+          <p className="mt-1 text-sm text-ink/60">
+            Thanks — you've already shared your thoughts on the online guide.
+          </p>
+        </div>
+      ) : (
+        <Link to="/feedback/app-guide" className="rounded-xl border border-border bg-surface p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">This app</p>
+          <p className="mt-2 text-lg font-semibold">Online Guide Feedback</p>
+          <p className="mt-1 text-sm text-ink/60">
+            Two quick questions about the schedule app you're using right now.
+          </p>
+        </Link>
+      )}
     </div>
   )
 }

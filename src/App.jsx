@@ -13,6 +13,7 @@ import SessionDetail from './components/SessionDetail'
 import MySchedule from './components/MySchedule'
 import FeedbackLauncher from './components/feedback/FeedbackLauncher'
 import OverallFeedbackWizard from './components/feedback/OverallFeedbackWizard'
+import AppGuideFeedback from './components/feedback/AppGuideFeedback'
 import SessionPicker from './components/feedback/SessionPicker'
 import SessionFeedbackPage from './components/feedback/SessionFeedbackPage'
 import FeedbackThanks from './components/feedback/FeedbackThanks'
@@ -95,6 +96,14 @@ export default function App() {
               element={
                 <RequireAttendee>
                   <OverallFeedbackWizard />
+                </RequireAttendee>
+              }
+            />
+            <Route
+              path="/feedback/app-guide"
+              element={
+                <RequireAttendee>
+                  <AppGuideFeedback />
                 </RequireAttendee>
               }
             />

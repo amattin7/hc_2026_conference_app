@@ -112,6 +112,7 @@ function SessionCard({ session }) {
         <p className="mt-1 text-sm text-ink/70">{session.presenter_name}</p>
         <p className="mt-1 text-sm text-ink/70">
           {session.time_block?.label ?? 'Time TBD'} · {session.room?.name ?? 'Room TBD'}
+          {session.room?.floor ? `, ${session.room.floor}` : ''}
         </p>
       </Link>
 

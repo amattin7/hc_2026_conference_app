@@ -96,12 +96,15 @@ export default function SessionDetail() {
       <div className="rounded-lg border border-border bg-surface p-4">
         <p className="text-sm text-ink/60">{session.time_block?.label}</p>
         {session.room?.name && (
-          <Link
-            to={`/schedule?by=room&value=${encodeURIComponent(session.room.name)}`}
-            className="mt-1 inline-block text-base font-medium underline"
-          >
-            {session.room.name}
-          </Link>
+          <div className="mt-1 flex items-baseline gap-2">
+            <Link
+              to={`/schedule?by=room&value=${encodeURIComponent(session.room.name)}`}
+              className="inline-block text-base font-medium underline"
+            >
+              {session.room.name}
+            </Link>
+            {session.room?.floor && <span className="text-sm text-ink/60">{session.room.floor}</span>}
+          </div>
         )}
         {session.room?.notes && <p className="mt-1 text-sm text-ink/60">{session.room.notes}</p>}
       </div>

@@ -12,6 +12,7 @@ export default function AdminFeedback() {
   const [sessions, setSessions] = useState([])
   const [feedback, setFeedback] = useState([])
   const [overallFeedback, setOverallFeedback] = useState([])
+  const [guideFeedback, setGuideFeedback] = useState([])
   const [attendeesCount, setAttendeesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -19,19 +20,26 @@ export default function AdminFeedback() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [tbRes, sessionsRes, feedbackRes, overallFeedbackRes, attendeesRes] = await Promise.all([
-      supabase.from('time_blocks').select('*').order('sort_order'),
-      supabase
-        .from('sessions')
-        .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
-        .order('sort_order'),
-      supabase.from('session_feedback').select('*'),
-      supabase.from('conference_feedback').select('*'),
-      supabase.from('attendees').select('id', { count: 'exact', head: true }),
-    ])
+    const [tbRes, sessionsRes, feedbackRes, overallFeedbackRes, guideFeedbackRes, attendeesRes] =
+      await Promise.all([
+        supabase.from('time_blocks').select('*').order('sort_order'),
+        supabase
+          .from('sessions')
+          .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
+          .order('sort_order'),
+        supabase.from('session_feedback').select('*'),
+        supabase.from('conference_feedback').select('*'),
+        supabase.from('app_guide_feedback').select('*'),
+        supabase.from('attendees').select('id', { count: 'exact', head: true }),
+      ])
 
     const error =
-      tbRes.error ?? sessionsRes.error ?? feedbackRes.error ?? overallFeedbackRes.error ?? attendeesRes.error
+      tbRes.error ??
+      sessionsRes.error ??
+      feedbackRes.error ??
+      overallFeedbackRes.error ??
+      guideFeedbackRes.error ??
+      attendeesRes.error
 
     if (error) {
       setLoadError(error)
@@ -41,6 +49,7 @@ export default function AdminFeedback() {
       setSessions(sessionsRes.data ?? [])
       setFeedback(feedbackRes.data ?? [])
       setOverallFeedback(overallFeedbackRes.data ?? [])
+      setGuideFeedback(guideFeedbackRes.data ?? [])
       setAttendeesCount(attendeesRes.count ?? 0)
     }
     setLoading(false)
@@ -94,6 +103,11 @@ export default function AdminFeedback() {
   const overallAvgRating = average(overallFeedback.map((f) => f.overall_rating))
   const overallAvgRecommend = average(overallFeedback.map((f) => f.recommend))
 
+  const guideSubmissions = guideFeedback.length
+  const guideHelpfulPct = guideSubmissions
+    ? Math.round((guideFeedback.filter((f) => f.helpful).length / guideSubmissions) * 100)
+    : 0
+
   function exportOverallFeedbackCsv() {
     const rows = overallFeedback.map((f) => ({
       overall_rating: f.overall_rating,
@@ -116,6 +130,22 @@ export default function AdminFeedback() {
     const a = document.createElement('a')
     a.href = url
     a.download = 'history-camp-overall-feedback.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function exportGuideFeedbackCsv() {
+    const rows = guideFeedback.map((f) => ({
+      helpful: f.helpful ? 'Yes' : 'No',
+      suggestions: f.suggestions ?? '',
+      submitted_at: f.submitted_at,
+    }))
+    const csv = Papa.unparse(rows)
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'history-camp-guide-feedback.csv'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -260,6 +290,32 @@ export default function AdminFeedback() {
             type="button"
             onClick={exportOverallFeedbackCsv}
             disabled={overallFeedback.length === 0}
+            className="rounded-md border border-border px-4 py-2 text-sm font-medium disabled:opacity-50"
+          >
+            Export CSV
+          </button>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">Online Guide Feedback</h2>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-border bg-surface p-4 text-center">
+            <p className="text-2xl font-semibold">{guideSubmissions}</p>
+            <p className="text-sm text-ink/60">Total submissions</p>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-4 text-center">
+            <p className="text-2xl font-semibold">{guideHelpfulPct}%</p>
+            <p className="text-sm text-ink/60">Said it was helpful</p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={exportGuideFeedbackCsv}
+            disabled={guideFeedback.length === 0}
             className="rounded-md border border-border px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
             Export CSV

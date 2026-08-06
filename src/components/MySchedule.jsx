@@ -94,7 +94,10 @@ export default function MySchedule() {
               <StatusBadge status={session.status} />
             </div>
 
-            <p className="mt-1 text-sm text-ink/70">{session.room?.name ?? 'Room TBD'}</p>
+            <p className="mt-1 text-sm text-ink/70">
+              {session.room?.name ?? 'Room TBD'}
+              {session.room?.floor ? `, ${session.room.floor}` : ''}
+            </p>
 
             {session.status === 'canceled' && (
               <p className="mt-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary-dark">
