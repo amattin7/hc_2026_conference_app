@@ -89,6 +89,28 @@ function storeAttendeeId(userId, attendeeId) {
   }
 }
 
+// Local calendar date (not UTC) — attendees are all in one place/timezone
+// for the event, so "today" should match the day they're actually having,
+// not flip over at 8pm Eastern the way a UTC date would.
+function todayLocalDate() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Fire-and-forget: marks that this attendee opened the app today, for the
+// admin dashboard's "signed in per day" widget. Upsert with
+// ignoreDuplicates so repeat opens the same day are a cheap no-op rather
+// than an error; failures here should never affect the actual app experience.
+function markActivityDay(attendeeId) {
+  supabase
+    .from('attendee_activity_days')
+    .upsert(
+      { attendee_id: attendeeId, activity_date: todayLocalDate() },
+      { onConflict: 'attendee_id,activity_date', ignoreDuplicates: true },
+    )
+    .then(() => {})
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   // A login can resolve to more than one attendees row when two people
@@ -320,6 +342,10 @@ export function AuthProvider({ children }) {
   const attendee = attendees.find((a) => a.id === activeAttendeeId) ?? null
   const needsAttendeeSelection = role === 'attendee' && attendees.length > 1 && !attendee
   const effectiveRole = role === 'admin' && previewAttendee ? 'attendee' : role
+
+  useEffect(() => {
+    if (attendee?.id) markActivityDay(attendee.id)
+  }, [attendee?.id])
 
   const value = {
     session,

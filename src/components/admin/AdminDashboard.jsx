@@ -8,23 +8,27 @@ export default function AdminDashboard() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
+  const [activityDays, setActivityDays] = useState([])
   const [interestSortDesc, setInterestSortDesc] = useState(true)
   const [interestExpanded, setInterestExpanded] = useState(false)
   const [checkInExpanded, setCheckInExpanded] = useState(false)
+  const [appUseExpanded, setAppUseExpanded] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [sessionsRes, favRes, attendeesRes, notifRes] = await Promise.all([
+    const [sessionsRes, favRes, attendeesRes, notifRes, activityRes] = await Promise.all([
       supabase
         .from('sessions')
         .select('*, time_block:time_blocks(id, label, sort_order), room:rooms(id, name)')
         .order('sort_order'),
-      supabase.from('attendee_sessions').select('session_id'),
+      supabase.from('attendee_sessions').select('session_id, attendee_id'),
       supabase.from('attendees').select('id, checked_in'),
       supabase.from('notifications_log').select('*').order('sent_at', { ascending: false }),
+      supabase.from('attendee_activity_days').select('attendee_id, activity_date'),
     ])
 
-    const error = sessionsRes.error ?? favRes.error ?? attendeesRes.error ?? notifRes.error
+    const error =
+      sessionsRes.error ?? favRes.error ?? attendeesRes.error ?? notifRes.error ?? activityRes.error
 
     if (error) {
       setLoadError(error)
@@ -34,6 +38,7 @@ export default function AdminDashboard() {
       setAttendeeSessions(favRes.data ?? [])
       setAttendees(attendeesRes.data ?? [])
       setNotifications(notifRes.data ?? [])
+      setActivityDays(activityRes.data ?? [])
     }
     setLoading(false)
   }, [])
@@ -56,6 +61,22 @@ export default function AdminDashboard() {
       .map((s) => ({ session: s, count: counts.get(s.id) ?? 0 }))
       .sort((a, b) => (interestSortDesc ? b.count - a.count : a.count - b.count))
   }, [sessions, attendeeSessions, interestSortDesc])
+
+  const savedSessionAttendeeCount = useMemo(
+    () => new Set(attendeeSessions.map((r) => r.attendee_id)).size,
+    [attendeeSessions],
+  )
+
+  const signedInByDay = useMemo(() => {
+    const byDate = new Map()
+    activityDays.forEach((r) => {
+      if (!byDate.has(r.activity_date)) byDate.set(r.activity_date, new Set())
+      byDate.get(r.activity_date).add(r.attendee_id)
+    })
+    return Array.from(byDate.entries())
+      .map(([date, attendeeIds]) => ({ date, count: attendeeIds.size }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [activityDays])
 
   if (loading) return <p className="text-base text-ink/60">Loading dashboard…</p>
 
@@ -97,6 +118,56 @@ export default function AdminDashboard() {
               <p className="text-2xl font-semibold">{checkedInPct}%</p>
               <p className="text-sm text-ink/60">Checked in</p>
             </div>
+          </div>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setAppUseExpanded((v) => !v)}
+          className="flex items-center justify-between rounded-md bg-surface px-3 py-3 text-left"
+        >
+          <h2 className="text-xl font-semibold">App Use</h2>
+          <span className="text-ink/50">{appUseExpanded ? '–' : '+'}</span>
+        </button>
+
+        {appUseExpanded && (
+          <div className="flex flex-col gap-3">
+            <div className="rounded-lg border border-border bg-surface p-4 text-center">
+              <p className="text-2xl font-semibold">{savedSessionAttendeeCount}</p>
+              <p className="text-sm text-ink/60">Attendees who saved at least one session</p>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border text-ink/60">
+                  <tr>
+                    <th className="px-3 py-2">Day</th>
+                    <th className="px-3 py-2">Attendees signed in</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {signedInByDay.map(({ date, count }) => (
+                    <tr key={date} className="border-b border-border last:border-b-0">
+                      <td className="px-3 py-2">{date}</td>
+                      <td className="px-3 py-2">{count}</td>
+                    </tr>
+                  ))}
+                  {signedInByDay.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="px-3 py-6 text-center text-ink/50">
+                        No sign-ins recorded yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-ink/50">
+              Only counts from {new Date().toLocaleDateString()} onward — this wasn't tracked before
+              today.
+            </p>
           </div>
         )}
       </section>
