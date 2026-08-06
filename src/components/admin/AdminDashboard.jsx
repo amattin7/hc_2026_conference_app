@@ -18,6 +18,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [interestSortDesc, setInterestSortDesc] = useState(true)
+  const [interestExpanded, setInterestExpanded] = useState(false)
   const [feedbackTimeBlockFilter, setFeedbackTimeBlockFilter] = useState('')
 
   const load = useCallback(async () => {
@@ -180,44 +181,54 @@ export default function AdminDashboard() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-semibold">Session Interest</h2>
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border text-ink/60">
-              <tr>
-                <th className="px-3 py-2">Session</th>
-                <th className="px-3 py-2">Time block</th>
-                <th className="px-3 py-2">Room</th>
-                <th className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setInterestSortDesc((v) => !v)}
-                    className="font-medium underline"
-                  >
-                    # Interested {interestSortDesc ? '↓' : '↑'}
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {interestRows.map(({ session, count }) => (
-                <tr key={session.id} className="border-b border-border last:border-b-0">
-                  <td className="px-3 py-2">{session.title}</td>
-                  <td className="px-3 py-2">{session.time_block?.label ?? '—'}</td>
-                  <td className="px-3 py-2">{session.room?.name ?? '—'}</td>
-                  <td className="px-3 py-2">{count}</td>
-                </tr>
-              ))}
-              {interestRows.length === 0 && (
+        <button
+          type="button"
+          onClick={() => setInterestExpanded((v) => !v)}
+          className="flex items-center justify-between rounded-md bg-surface px-3 py-3 text-left"
+        >
+          <h2 className="text-xl font-semibold">Session Interest</h2>
+          <span className="text-ink/50">{interestExpanded ? '–' : '+'}</span>
+        </button>
+
+        {interestExpanded && (
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border text-ink/60">
                 <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-ink/50">
-                    No sessions yet.
-                  </td>
+                  <th className="px-3 py-2">Session</th>
+                  <th className="px-3 py-2">Time block</th>
+                  <th className="px-3 py-2">Room</th>
+                  <th className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setInterestSortDesc((v) => !v)}
+                      className="font-medium underline"
+                    >
+                      # Interested {interestSortDesc ? '↓' : '↑'}
+                    </button>
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {interestRows.map(({ session, count }) => (
+                  <tr key={session.id} className="border-b border-border last:border-b-0">
+                    <td className="px-3 py-2">{session.title}</td>
+                    <td className="px-3 py-2">{session.time_block?.label ?? '—'}</td>
+                    <td className="px-3 py-2">{session.room?.name ?? '—'}</td>
+                    <td className="px-3 py-2">{count}</td>
+                  </tr>
+                ))}
+                {interestRows.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-6 text-center text-ink/50">
+                      No sessions yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
