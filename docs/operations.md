@@ -209,6 +209,18 @@ address for production sends.
 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are provided automatically
 inside every Edge Function's environment — no need to set those as secrets.
 
+## Post-event: reactivating for next year
+
+`src/App.jsx` now routes everything except `/admin/*` to `src/components/ThankYou.jsx` — see the
+comment at the top of `App.jsx`. The attendee components (`Welcome`, `Home`, `Schedule`,
+`SessionDetail`, `MySchedule`, everything under `feedback/`, `Layout`, `ProtectedRoute`'s
+`attendee` branch, `RequireAttendee`, `ClaimEmailRedirect`, `AttendeeSelect`) were **not**
+deleted, just unrouted, along with their contexts (`ScheduleContext`, `FavoritesContext`). To
+bring the app back for a future event: restore the pre-thank-you route tree in `App.jsx` (see git
+history around the "Replace live app with post-event thank-you page" commit), re-add the
+`AdminLayout` "Preview as attendee" button if wanted, and run the [test data
+cleanup](#test-data-cleanup) before loading the new roster.
+
 ## Deploy
 
 Vercel auto-deploys on push to `claude/history-camp-boston-pwa-kume5k` (this repo's default

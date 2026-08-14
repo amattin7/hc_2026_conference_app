@@ -3,6 +3,15 @@
 For organizers using the `/admin` section day-to-day. For technical/Supabase reference, see
 [`operations.md`](./operations.md).
 
+## Post-event: the live site is now a thank-you page
+
+Once the conference wrapped, every attendee-facing route (welcome, home, schedule, my schedule,
+feedback) was unrouted in favor of a single static "Thank you for a successful History Camp
+2026!" page linking to thepursuitofhistory.org. `/admin/login` and `/admin` still work exactly as
+before — sign in normally to pull final reports/exports. See
+[`operations.md`](./operations.md#post-event-reactivating-for-next-year) for how to bring the
+attendee app back for next year's event.
+
 ## Signing in as an admin
 
 Admin accounts are regular Supabase logins, flagged with `role: admin` in their account
