@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import logo from '../assets/historycamp-logo.png'
 
 // Post-event landing page. Every attendee-facing route falls through to this
@@ -24,6 +25,13 @@ export default function ThankYou() {
         >
           Visit The Pursuit of History
         </a>
+
+        <Link
+          to="/schedule"
+          className="mt-4 inline-block w-full rounded-md border border-primary px-4 py-3 text-base font-medium text-primary"
+        >
+          View the History Camp 2026 Schedule
+        </Link>
       </div>
     </div>
   )

@@ -3,6 +3,9 @@ import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ThankYou from './components/ThankYou'
+import PublicScheduleLayout from './components/PublicScheduleLayout'
+import PublicSchedule from './components/PublicSchedule'
+import PublicSessionDetail from './components/PublicSessionDetail'
 import AdminLogin from './components/admin/AdminLogin'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminAttendees from './components/admin/AdminAttendees'
@@ -37,6 +40,11 @@ export default function App() {
             <Route path="schedule" element={<AdminSchedule />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="feedback" element={<AdminFeedback />} />
+          </Route>
+
+          <Route element={<PublicScheduleLayout />}>
+            <Route path="/schedule" element={<PublicSchedule />} />
+            <Route path="/schedule/:sessionId" element={<PublicSessionDetail />} />
           </Route>
 
           <Route path="*" element={<ThankYou />} />
